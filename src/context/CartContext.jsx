@@ -45,10 +45,12 @@ export function CartProvider({ children }) {
   const clearCart = useCallback(() => setItems([]), [])
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0)
-  const taxRate = 0        // Set to 0 for MMK / Myanmar
+  const taxRate = 0
   const taxAmt = 0
-  const total = subtotal
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0)
+
+  // total is calculated in components using discount from SaleContext
+  const total = subtotal
 
   return (
     <CartContext.Provider value={{

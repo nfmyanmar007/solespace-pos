@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, Package,
-  Users, BarChart2, LogOut, Menu, X, Tag
+  Users, BarChart2, LogOut, Menu, Tag
 } from 'lucide-react'
 
 const NAV = [
-  { label: 'Dashboard',  icon: LayoutDashboard, path: '/admin/dashboard' },
-  { label: 'Transactions', icon: ShoppingBag,   path: '/admin/transactions' },
-  { label: 'Products',   icon: Package,          path: '/admin/products' },
-  { label: 'Inventory',  icon: Package,          path: '/admin/inventory' },
-  { label: 'Customers',  icon: Users,            path: '/admin/customers' },
-  { label: 'Discounts',  icon: Tag,              path: '/admin/discounts' },
-  { label: 'Reports',    icon: BarChart2,         path: '/admin/reports' },
+  { label: 'Dashboard',    icon: LayoutDashboard, path: '/admin-dashboard' },
+  { label: 'Transactions', icon: ShoppingBag,     path: '/admin-transactions' },
+  { label: 'Products',     icon: Package,          path: '/admin-products' },
+  { label: 'Inventory',    icon: Package,          path: '/admin-inventory' },
+  { label: 'Customers',    icon: Users,            path: '/admin-customers' },
+  { label: 'Discounts',    icon: Tag,              path: '/admin-discounts' },
+  { label: 'Reports',      icon: BarChart2,        path: '/admin-reports' },
 ]
 
 export default function AdminLayout({ children }) {
@@ -22,15 +22,21 @@ export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    const s = localStorage.getItem('admin_session')
-    if (!s) { navigate('/admin'); return }
-    setSession(JSON.parse(s))
+    try {
+      const s = localStorage.getItem('admin_session')
+      if (!s) { navigate('/admin-login'); return }
+      setSession(JSON.parse(s))
+    } catch {
+      navigate('/admin-login')
+    }
   }, [])
 
   function handleLogout() {
     localStorage.removeItem('admin_session')
-    navigate('/admin')
+    navigate('/admin-login')
   }
+
+  const pageTitle = NAV.find(n => n.path === location.pathname)?.label || 'Admin'
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -42,7 +48,6 @@ export default function AdminLayout({ children }) {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:relative lg:translate-x-0
       `}>
-        {/* Logo */}
         <div className="px-4 py-5 border-b border-slate-700">
           <div className="flex items-center gap-2">
             <span className="text-xl">👟</span>
@@ -53,7 +58,6 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
 
-        {/* Nav links */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {NAV.map(({ label, icon: Icon, path }) => {
             const active = location.pathname === path
@@ -75,7 +79,6 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        {/* Staff info + logout */}
         <div className="px-4 py-4 border-t border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
@@ -110,7 +113,6 @@ export default function AdminLayout({ children }) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -118,15 +120,14 @@ export default function AdminLayout({ children }) {
           >
             <Menu size={20} />
           </button>
-          <h1 className="text-sm font-semibold text-gray-800 flex-1 capitalize">
-            {location.pathname.split('/').pop()}
+          <h1 className="text-sm font-semibold text-gray-800 flex-1">
+            {pageTitle}
           </h1>
           <span className="text-xs text-gray-400">
             {new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}
           </span>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           {children}
         </main>

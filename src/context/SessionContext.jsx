@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 
 const SessionContext = createContext(null)
 
 export function SessionProvider({ children }) {
   const [session, setSession] = useState(() => {
-    // Don't load POS session if we're on an admin page
     try {
       const path = window.location.pathname
-      if (path.startsWith('/admin')) return null
+      if (path.indexOf('admin') !== -1) return null
       const saved = localStorage.getItem('pos_session')
       return saved ? JSON.parse(saved) : null
-    } catch {
+    } catch (e) {
       return null
     }
   })

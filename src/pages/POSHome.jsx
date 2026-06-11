@@ -120,30 +120,35 @@ const search = useCallback(async (q) => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
       {/* Top bar */}
-      <header className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">👟</span>
-          <div>
-            <p className="text-sm font-semibold leading-tight">SoleSpace POS</p>
-            <p className="text-xs text-slate-400 leading-tight">
-              <Store size={10} className="inline mr-1" />
-              Downtown · {session?.staffName}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 capitalize bg-slate-700 px-2 py-1 rounded-full">
-            {session?.role}
-          </span>
-          <button
-            onClick={handleLogout}
-            className="text-slate-400 hover:text-white transition-colors"
-            title="Sign out"
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-      </header>
+<header className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
+  <div className="flex items-center gap-2">
+    <span className="text-xl">👟</span>
+    <div>
+      <p className="text-sm font-semibold leading-tight">SoleSpace POS</p>
+      <p className="text-xs text-slate-400 leading-tight">
+        Downtown · {session?.staffName}
+      </p>
+    </div>
+  </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => navigate('/pos/summary')}
+      className="text-xs text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors"
+    >
+      My Day
+    </button>
+    <span className="text-xs text-slate-400 capitalize bg-slate-700 px-2 py-1 rounded-full">
+      {session?.role}
+    </span>
+    <button
+      onClick={handleLogout}
+      className="text-slate-400 hover:text-white transition-colors"
+      title="Sign out"
+    >
+      <LogOut size={18} />
+    </button>
+  </div>
+</header>
 
       {/* Main content */}
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">

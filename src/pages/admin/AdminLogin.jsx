@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import Spinner from '../../components/ui/Spinner'
@@ -9,22 +9,34 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // If already logged in as admin, go straight to dashboard
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('admin_session')
+      if (s) navigate('/admin/dashboard', { replace: true })
+    } catch {}
+  }, [])
+
   const numpadKeys = ['1','2','3','4','5','6','7','8','9','⌫','0','✕']
 
   function handleKey(key) {
     if (key === '⌫') { setPin(p => p.slice(0,-1)); setError('') }
     else if (key === '✕') { setPin(''); setError('') }
-    else if (pin.length < 4) { setPin(p => p + key); setError('') }
+    else if (pin.length < 4) {
+      const newPin = pin + key
+      setPin(newPin)
+      setError('')
+      if (newPin.length === 4) verifyPin(newPin)
+    }
   }
 
-  async function handleLogin() {
-    if (pin.length < 4) return
+  async function verifyPin(pinToCheck) {
     setLoading(true)
     try {
       const { data, error: dbErr } = await supabase
         .from('staff')
         .select('*')
-        .eq('pin_hash', pin)
+        .eq('pin_hash', pinToCheck)
         .in('role', ['admin', 'manager'])
         .eq('is_active', true)
         .single()
@@ -36,25 +48,26 @@ export default function AdminLogin() {
         return
       }
 
-      localStorage.setItem('admin_session', JSON.stringify({
-        staffId: data.id,
+      const sessionData = {
+        staffId:   data.id,
         staffName: data.full_name,
-        role: data.role,
-        storeId: data.store_id,
-      }))
-      navigate('/admin/dashboard')
-    } catch {
+        role:      data.role,
+        storeId:   data.store_id,
+      }
+
+      localStorage.setItem('admin_session', JSON.stringify(sessionData))
+
+      // Small delay then navigate
+      setTimeout(() => {
+        navigate('/admin/dashboard', { replace: true })
+      }, 100)
+
+    } catch (err) {
       setError('Login failed. Try again.')
       setPin('')
-    } finally {
       setLoading(false)
     }
   }
-
-  // Auto submit on 4 digits
-  React.useEffect(() => {
-    if (pin.length === 4) handleLogin()
-  }, [pin])
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -74,11 +87,13 @@ export default function AdminLogin() {
             {/* PIN dots */}
             <div className="flex justify-center gap-3 mb-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all
-                  ${i < pin.length
-                    ? 'bg-slate-800 border-slate-800 scale-110'
-                    : 'border-gray-300'
-                  }`}
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full border-2 transition-all
+                    ${i < pin.length
+                      ? 'bg-slate-800 border-slate-800 scale-110'
+                      : 'border-gray-300'
+                    }`}
                 />
               ))}
             </div>
@@ -94,24 +109,28 @@ export default function AdminLogin() {
               {numpadKeys.map((key) => (
                 <button
                   key={key}
-                  onClick={() => handleKey(key)}
+                  onClick={() => !loading && handleKey(key)}
                   disabled={loading}
                   className={`h-12 rounded-xl font-semibold text-lg transition-all active:scale-95
                     ${key === '⌫' || key === '✕'
                       ? 'bg-gray-100 text-gray-500 text-sm'
                       : 'bg-gray-50 border border-gray-200 text-gray-800 hover:bg-gray-100'
-                    }`}
+                    }
+                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {loading && key === '✕' ? <Spinner size="sm" color="gray" /> : key}
+                  {loading && key === '0'
+                    ? <Spinner size="sm" color="gray" />
+                    : key
+                  }
                 </button>
               ))}
             </div>
+
+            <p className="text-center text-gray-400 text-xs mt-4">
+              Admin: 1234 · Manager: 5678
+            </p>
           </div>
         </div>
-
-        <p className="text-center text-slate-600 text-xs mt-4">
-          Admin PIN: 1234 · Manager PIN: 5678
-        </p>
       </div>
     </div>
   )

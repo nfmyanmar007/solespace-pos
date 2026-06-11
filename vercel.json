@@ -1,24 +1,15 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
-    {
-      "source": "/admin",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/pos",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/pos/:path*",
-      "destination": "/index.html"
-    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
     }
   ]
 }

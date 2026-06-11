@@ -20,49 +20,73 @@ export default function POSHome() {
   const [loading, setLoading] = useState(false)
 
   // Search products
-  const search = useCallback(async (q) => {
-    if (!q.trim()) {
-      setResults([])
-      return
-    }
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('product_variants')
-        .select(`
-          id, sku, barcode, size, color, price, is_active,
-          products ( id, name, gender ),
-          inventory!inner ( qty_on_hand, store_id )
-        `)
-        .eq('inventory.store_id', STORE_ID)
-        .eq('is_active', true)
-        .or(
-          `sku.ilike.%${q}%,barcode.eq.${q}`,
-          { referencedTable: 'product_variants' }
-        )
-        .or(`name.ilike.%${q}%`, { referencedTable: 'products' })
-        .limit(20)
+const search = useCallback(async (q) => {
+  if (!q.trim()) {
+    setResults([])
+    return
+  }
+  setLoading(true)
+  try {
+    // Search variants by SKU or barcode
+    const { data: variantData, error: variantError } = await supabase
+      .from('product_variants')
+      .select(`
+        id, sku, barcode, size, color, price, is_active,
+        products ( id, name ),
+        inventory ( qty_on_hand, store_id )
+      `)
+      .eq('is_active', true)
+      .or(`sku.ilike.%${q}%,barcode.eq.${q}`)
+      .limit(20)
 
-      if (error) throw error
+    if (variantError) throw variantError
 
-      const mapped = (data || []).map((v) => ({
+    // Also search by product name
+    const { data: nameData, error: nameError } = await supabase
+      .from('product_variants')
+      .select(`
+        id, sku, barcode, size, color, price, is_active,
+        products!inner ( id, name ),
+        inventory ( qty_on_hand, store_id )
+      `)
+      .eq('is_active', true)
+      .ilike('products.name', `%${q}%`)
+      .limit(20)
+
+    if (nameError) throw nameError
+
+    // Merge and deduplicate
+    const combined = [...(variantData || []), ...(nameData || [])]
+    const seen = new Set()
+    const unique = combined.filter((v) => {
+      if (seen.has(v.id)) return false
+      seen.add(v.id)
+      return true
+    })
+
+    const mapped = unique.map((v) => {
+      const storeInventory = (v.inventory || []).find(
+        (i) => i.store_id === STORE_ID
+      )
+      return {
         variantId: v.id,
         productName: v.products?.name || 'Unknown',
         sku: v.sku,
         size: v.size,
         color: v.color,
         price: v.price,
-        stock: v.inventory?.[0]?.qty_on_hand ?? 0,
-      }))
+        stock: storeInventory?.qty_on_hand ?? 0,
+      }
+    })
 
-      setResults(mapped)
-    } catch (err) {
-      console.error('Search error:', err)
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    setResults(mapped)
+  } catch (err) {
+    console.error('Search error:', err)
+    setResults([])
+  } finally {
+    setLoading(false)
+  }
+}, [])
 
   // Debounce search
   useEffect(() => {

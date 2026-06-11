@@ -4,7 +4,10 @@ const SessionContext = createContext(null)
 
 export function SessionProvider({ children }) {
   const [session, setSession] = useState(() => {
+    // Don't load POS session if we're on an admin page
     try {
+      const path = window.location.pathname
+      if (path.startsWith('/admin')) return null
       const saved = localStorage.getItem('pos_session')
       return saved ? JSON.parse(saved) : null
     } catch {

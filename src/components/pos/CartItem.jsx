@@ -1,15 +1,13 @@
 import React from 'react'
 import { Minus, Plus, Trash2 } from 'lucide-react'
+import { formatMMK } from '../../lib/currency'
 
 export default function CartItem({ item, onUpdateQty, onRemove }) {
   return (
     <div className="flex items-center gap-2 py-2.5 border-b border-gray-100 last:border-0">
-      {/* Icon */}
       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
         👟
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-gray-900 truncate">
           {item.productName}
@@ -46,13 +44,13 @@ export default function CartItem({ item, onUpdateQty, onRemove }) {
       </div>
 
       {/* Line total */}
-      <div className="w-14 text-right flex-shrink-0">
+      <div className="w-20 text-right flex-shrink-0">
         <p className="text-xs font-bold text-gray-900">
-          ${(item.price * item.qty).toFixed(2)}
+          {formatMMK(item.price * item.qty)}
         </p>
         {item.qty > 1 && (
           <p className="text-xs text-gray-400">
-            ${item.price.toFixed(2)} ea
+            {formatMMK(item.price)} ea
           </p>
         )}
       </div>

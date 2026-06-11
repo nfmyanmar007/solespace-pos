@@ -1,3 +1,4 @@
+import { formatMMK } from '../../lib/currency'
 import React from 'react'
 import { Plus, AlertTriangle } from 'lucide-react'
 import Badge from '../ui/Badge'
@@ -68,7 +69,7 @@ export default function ProductList({ results, loading, query, onAdd }) {
           {/* Price + Add button */}
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <span className="text-sm font-bold text-gray-900">
-              ${parseFloat(item.price).toFixed(2)}
+              {formatMMK(item.price)}
             </span>
             <button
               onClick={() => onAdd(item)}

@@ -73,57 +73,57 @@ export default function PaymentPage() {
   }
 
   // ── Success screen ──
-  if (result) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={32} className="text-green-600" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Sale Complete!</h2>
-          <p className="text-gray-500 text-sm mb-4">{result.refNumber}</p>
+if (result) {
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 size={32} className="text-green-600" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Sale Complete!</h2>
+        <p className="text-gray-500 text-sm mb-4">{result.refNumber}</p>
 
-          <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Total charged</span>
-              <span className="font-bold text-gray-900">{formatMMK(total)}</span>
-            </div>
-            {method === 'cash' && (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Cash received</span>
-                  <span className="text-gray-700">{formatMMK(cashTendered)}</span>
-                </div>
-                <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
-                  <span className="text-gray-500">Change</span>
-                  <span className="font-bold text-green-600">{formatMMK(change)}</span>
-                </div>
-              </>
-            )}
-            <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
-              <span className="text-gray-500">Payment method</span>
-              <span className="capitalize text-gray-700">{method}</span>
-            </div>
+        <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Total charged</span>
+            <span className="font-bold text-gray-900">{formatMMK(total)}</span>
           </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={() => { setResult(null); navigate('/pos') }}
-              className="w-full py-3 rounded-xl bg-slate-800 text-white font-semibold text-sm hover:bg-slate-700 transition-colors"
-            >
-              New Sale
-            </button>
-            <button
-              onClick={() => navigate('/pos')}
-              className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm hover:bg-gray-50 transition-colors"
-            >
-              Back to POS
-            </button>
+          {method === 'cash' && (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Cash received</span>
+                <span className="text-gray-700">{formatMMK(cashTendered)}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
+                <span className="text-gray-500">Change</span>
+                <span className="font-bold text-green-600">{formatMMK(change)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
+            <span className="text-gray-500">Payment</span>
+            <span className="capitalize text-gray-700">{method}</span>
           </div>
         </div>
+
+        <div className="space-y-2">
+          <button
+            onClick={() => navigate(`/pos/receipt/${result.transactionId}`)}
+            className="w-full py-3 rounded-xl bg-slate-800 text-white font-semibold text-sm hover:bg-slate-700 transition-colors"
+          >
+            View / Print Receipt
+          </button>
+          <button
+            onClick={() => { setResult(null); navigate('/pos') }}
+            className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm hover:bg-gray-50 transition-colors"
+          >
+            New Sale
+          </button>
+        </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   // ── Payment screen ──
   return (

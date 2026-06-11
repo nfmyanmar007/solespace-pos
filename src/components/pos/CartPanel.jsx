@@ -3,10 +3,11 @@ import { ShoppingCart, Trash2 } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import CartItem from './CartItem'
 import { useNavigate } from 'react-router-dom'
+import { formatMMK } from '../../lib/currency'
 
 export default function CartPanel() {
   const { items, removeItem, updateQty, clearCart,
-          subtotal, taxRate, taxAmt, total, itemCount } = useCart()
+          subtotal, total, itemCount } = useCart()
   const navigate = useNavigate()
 
   return (
@@ -16,9 +17,7 @@ export default function CartPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <ShoppingCart size={16} className="text-gray-600" />
-          <span className="text-sm font-semibold text-gray-800">
-            Cart
-          </span>
+          <span className="text-sm font-semibold text-gray-800">Cart</span>
           {itemCount > 0 && (
             <span className="bg-slate-800 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {itemCount}
@@ -62,16 +61,12 @@ export default function CartPanel() {
       {items.length > 0 && (
         <div className="border-t border-gray-100 px-4 py-3 space-y-2">
           <div className="flex justify-between text-xs text-gray-500">
-            <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Tax ({(taxRate * 100).toFixed(0)}%)</span>
-            <span>${taxAmt.toFixed(2)}</span>
+            <span>{itemCount} item{itemCount > 1 ? 's' : ''}</span>
+            <span>{formatMMK(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm font-bold text-gray-900 pt-1 border-t border-gray-100">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatMMK(total)}</span>
           </div>
 
           <button
@@ -83,7 +78,7 @@ export default function CartPanel() {
               transition-all mt-1
             "
           >
-            Charge ${total.toFixed(2)}
+            Charge {formatMMK(total)}
           </button>
         </div>
       )}

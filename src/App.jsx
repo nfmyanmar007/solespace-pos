@@ -20,13 +20,12 @@ function ProtectedRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
-  // Read directly — no hooks needed
   try {
     const raw = localStorage.getItem('admin_session')
-    if (!raw) return <Navigate to="/admin" replace />
+    if (!raw) return <Navigate to="/admin-login" replace />
     return children
   } catch {
-    return <Navigate to="/admin" replace />
+    return <Navigate to="/admin-login" replace />
   }
 }
 
@@ -48,26 +47,14 @@ export default function App() {
         <ProtectedRoute><SummaryPage /></ProtectedRoute>
       } />
 
-      {/* Admin routes */}
-      <Route path="/admin" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={
-        <AdminRoute><AdminDashboard /></AdminRoute>
-      } />
-      <Route path="/admin/*" element={
+      {/* Admin routes — using different path to avoid Vercel conflict */}
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin-dashboard" element={
         <AdminRoute><AdminDashboard /></AdminRoute>
       } />
 
-      {/* Catch all — important: don't redirect /admin to / */}
-      <Route path="*" element={<CatchAll />} />
+      {/* Catch all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
-}
-
-function CatchAll() {
-  const location = useLocation()
-  // Don't redirect admin paths to POS login
-  if (location.pathname.startsWith('/admin')) {
-    return <Navigate to="/admin" replace />
-  }
-  return <Navigate to="/" replace />
 }

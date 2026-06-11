@@ -36,10 +36,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (session) navigate('/pos')
-  }, [session, navigate])
+  // Redirect if already logged in — but not if coming from admin
+useEffect(() => {
+  const isAdminPath = window.location.pathname.startsWith('/admin')
+  if (session && !isAdminPath) navigate('/pos')
+}, [session, navigate])
 
   // Load store + staff from Supabase
   useEffect(() => {

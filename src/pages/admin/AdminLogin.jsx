@@ -10,6 +10,10 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    // Clear POS session so it doesn't interfere with admin
+    localStorage.removeItem('pos_session')
+
+    // If already logged into admin, go to dashboard
     try {
       const s = localStorage.getItem('admin_session')
       if (s) navigate('/admin-dashboard', { replace: true })
@@ -123,6 +127,16 @@ export default function AdminLogin() {
             </p>
           </div>
         </div>
+
+        {/* Back to POS link */}
+        <p className="text-center mt-4">
+          
+            href="/"
+            className="text-slate-500 hover:text-slate-300 text-xs underline"
+          >
+            ← Back to POS
+          </a>
+        </p>
       </div>
     </div>
   )

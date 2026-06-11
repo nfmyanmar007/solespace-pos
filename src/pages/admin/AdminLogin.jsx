@@ -9,11 +9,10 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // If already logged in as admin, go straight to dashboard
   useEffect(() => {
     try {
       const s = localStorage.getItem('admin_session')
-      if (s) navigate('/admin/dashboard', { replace: true })
+      if (s) navigate('/admin-dashboard', { replace: true })
     } catch {}
   }, [])
 
@@ -48,21 +47,18 @@ export default function AdminLogin() {
         return
       }
 
-      const sessionData = {
+      localStorage.setItem('admin_session', JSON.stringify({
         staffId:   data.id,
         staffName: data.full_name,
         role:      data.role,
         storeId:   data.store_id,
-      }
+      }))
 
-      localStorage.setItem('admin_session', JSON.stringify(sessionData))
-
-      // Small delay then navigate
       setTimeout(() => {
-        navigate('/admin/dashboard', { replace: true })
+        navigate('/admin-dashboard', { replace: true })
       }, 100)
 
-    } catch (err) {
+    } catch {
       setError('Login failed. Try again.')
       setPin('')
       setLoading(false)
@@ -84,16 +80,13 @@ export default function AdminLogin() {
               ENTER YOUR PIN
             </p>
 
-            {/* PIN dots */}
             <div className="flex justify-center gap-3 mb-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-3 h-3 rounded-full border-2 transition-all
-                    ${i < pin.length
-                      ? 'bg-slate-800 border-slate-800 scale-110'
-                      : 'border-gray-300'
-                    }`}
+                <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all
+                  ${i < pin.length
+                    ? 'bg-slate-800 border-slate-800 scale-110'
+                    : 'border-gray-300'
+                  }`}
                 />
               ))}
             </div>
@@ -104,7 +97,6 @@ export default function AdminLogin() {
               </div>
             )}
 
-            {/* Numpad */}
             <div className="grid grid-cols-3 gap-2">
               {numpadKeys.map((key) => (
                 <button

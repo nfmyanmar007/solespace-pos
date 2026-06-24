@@ -9,19 +9,31 @@ const CLOUDINARY_CLOUD_NAME = 'ddkrznjvx'
 const CLOUDINARY_UPLOAD_PRESET = 'solespace_pos'
 
 async function uploadToCloudinary(file) {
+  console.log('Starting Cloudinary upload...')
+  console.log('Cloud name:', CLOUDINARY_CLOUD_NAME)
+  console.log('Preset:', CLOUDINARY_UPLOAD_PRESET)
+  console.log('File:', file.name, file.size, file.type)
+
   const formData = new FormData()
   formData.append('file', file)
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
-  formData.append('folder', 'solespace_pos')
 
-  const response = await fetch(
-    'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload',
-    { method: 'POST', body: formData }
-  )
+  const url = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload'
+  console.log('Uploading to:', url)
+
+  const response = await fetch(url, { method: 'POST', body: formData })
+
+  console.log('Response status:', response.status)
+
+  const data = await response.json()
+  console.log('Response data:', data)
 
   if (!response.ok) {
-    throw new Error('Image upload failed: ' + response.statusText)
+    throw new Error(data.error ? data.error.message : 'Upload failed')
   }
+
+  return data.secure_url
+}
 
   const data = await response.json()
   return data.secure_url

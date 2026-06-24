@@ -31,10 +31,10 @@ const search = useCallback(async (q) => {
     const { data: variantData, error: variantError } = await supabase
       .from('product_variants')
       .select(`
-        id, sku, barcode, size, color, price, is_active,
-        products ( id, name ),
-        inventory ( qty_on_hand, store_id )
-      `)
+  id, sku, barcode, size, color, price, is_active,
+  products ( id, name, image_url ),
+  inventory ( qty_on_hand, store_id )
+`)
       .eq('is_active', true)
       .or(`sku.ilike.%${q}%,barcode.eq.${q}`)
       .limit(20)
@@ -64,20 +64,21 @@ const search = useCallback(async (q) => {
       return true
     })
 
-    const mapped = unique.map((v) => {
-      const storeInventory = (v.inventory || []).find(
-        (i) => i.store_id === STORE_ID
-      )
-      return {
-        variantId: v.id,
-        productName: v.products?.name || 'Unknown',
-        sku: v.sku,
-        size: v.size,
-        color: v.color,
-        price: v.price,
-        stock: storeInventory?.qty_on_hand ?? 0,
-      }
-    })
+    const mapped = unique.map(function(v) {
+  const storeInventory = (v.inventory || []).find(
+    function(i) { return i.store_id === STORE_ID }
+  )
+  return {
+    variantId: v.id,
+    productName: v.products ? v.products.name : 'Unknown',
+    imageUrl: v.products ? (v.products.image_url || null) : null,
+    sku: v.sku,
+    size: v.size,
+    color: v.color,
+    price: v.price,
+    stock: storeInventory ? storeInventory.qty_on_hand : 0,
+  }
+})
 
     setResults(mapped)
   } catch (err) {

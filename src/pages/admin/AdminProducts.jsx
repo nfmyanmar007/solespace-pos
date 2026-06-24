@@ -65,34 +65,37 @@ export default function AdminProducts() {
   }
 
   async function handleSave() {
-    if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
-      setMsg('Please fill all required fields.')
-      return
-    }
-    setSaving(true)
-    setMsg('')
-    try {
-      if (editVariant) {
-        await supabase
+  if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
+    setMsg('Please fill all required fields.')
+    return
+  }
+  setSaving(true)
+  setMsg('')
+  try {
+    if (editVariant) {
+      await supabase
+        .from('product_variants')
+        .update({
+          sku: form.sku,
+          barcode: form.barcode || null,
+          size: form.size,
+          color: form.color,
+          price: parseFloat(form.price),
+          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+        })
+        .eq('id', editVariant.id)
+      setMsg('Updated successfully.')
+    } else {
+      const { data: prod } = await supabase
+        .from('products')
+        .insert({ name: form.productName, gender: 'unisex', is_active: true })
+        .select()
+        .single()
+
+      if (prod) {
+        const { data: variant } = await supabase
           .from('product_variants')
-          .update({
-            sku: form.sku,
-            barcode: form.barcode || null,
-            size: form.size,
-            color: form.color,
-            price: parseFloat(form.price),
-            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-          })
-          .eq('id', editVariant.id)
-        setMsg('Updated successfully.')
-      } else {
-        const { data: prod } = await supabase
-          .from('products')
-          .insert({ name: form.productName, gender: 'unisex', is_active: true })
-          .select()
-          .single()
-        if (prod) {
-          await supabase.from('product_variants').insert({
+          .insert({
             product_id: prod.id,
             sku: form.sku,
             barcode: form.barcode || null,
@@ -102,16 +105,29 @@ export default function AdminProducts() {
             cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
             is_active: true,
           })
+          .select()
+          .single()
+
+        if (variant) {
+          await supabase
+            .from('inventory')
+            .insert({
+              variant_id: variant.id,
+              store_id: 'a0000000-0000-0000-0000-000000000001',
+              qty_on_hand: 0,
+              reorder_point: 5,
+            })
         }
-        setMsg('Product created successfully.')
       }
-      loadData()
-      setShowForm(false)
-    } catch (e) {
-      setMsg('Error: ' + e.message)
+      setMsg('Product created. Go to Inventory to set stock quantity.')
     }
-    setSaving(false)
+    loadData()
+    setShowForm(false)
+  } catch (e) {
+    setMsg('Error: ' + e.message)
   }
+  setSaving(false)
+}
 
   async function toggleActive(v) {
     await supabase

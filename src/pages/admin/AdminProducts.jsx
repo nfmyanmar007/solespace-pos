@@ -96,86 +96,126 @@ export default function AdminProducts() {
   }
 
   async function handleSave() {
-    if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
-      setMsg('Please fill all required fields.')
-      return
-    }
-    setSaving(true)
-    setMsg('')
-    try {
-      if (editVariant) {
-        let imageUrl = form.imageUrl
-        if (imageFile && editVariant.products) {
-          const uploaded = await uploadImage(editVariant.products.id)
-          if (uploaded) imageUrl = uploaded
+  if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
+    setMsg('Please fill all required fields.')
+    return
+  }
+  setSaving(true)
+  setMsg('')
+  try {
+    if (editVariant) {
+      let imageUrl = form.imageUrl
+
+      if (imageFile && editVariant.products) {
+        setMsg('Uploading image...')
+        const ext = imageFile.name.split('.').pop()
+        const path = 'products/' + editVariant.products.id + '-' + Date.now() + '.' + ext
+        const { error: upErr } = await supabase.storage
+          .from('product-images')
+          .upload(path, imageFile, { upsert: true })
+        if (!upErr) {
+          const { data: urlData } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(path)
+          imageUrl = urlData.publicUrl
         }
+      }
+
+      await supabase
+        .from('product_variants')
+        .update({
+          sku: form.sku,
+          barcode: form.barcode || null,
+          size: form.size,
+          color: form.color,
+          price: parseFloat(form.price),
+          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+        })
+        .eq('id', editVariant.id)
+
+      if (editVariant.products) {
         await supabase
-          .from('product_variants')
-          .update({
-            sku: form.sku,
-            barcode: form.barcode || null,
-            size: form.size,
-            color: form.color,
-            price: parseFloat(form.price),
-            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-          })
-          .eq('id', editVariant.id)
-        if (editVariant.products) {
+          .from('products')
+          .update({ image_url: imageUrl || null })
+          .eq('id', editVariant.products.id)
+      }
+
+      setMsg('Updated successfully.')
+
+    } else {
+      const { data: prod, error: prodErr } = await supabase
+        .from('products')
+        .insert({ name: form.productName, gender: 'unisex', is_active: true })
+        .select()
+        .single()
+
+      if (prodErr || !prod) {
+        setMsg('Error creating product: ' + (prodErr ? prodErr.message : 'unknown'))
+        setSaving(false)
+        return
+      }
+
+      let imageUrl = null
+      if (imageFile) {
+        setMsg('Uploading image...')
+        const ext = imageFile.name.split('.').pop()
+        const path = 'products/' + prod.id + '-' + Date.now() + '.' + ext
+        const { error: upErr } = await supabase.storage
+          .from('product-images')
+          .upload(path, imageFile, { upsert: true })
+        if (!upErr) {
+          const { data: urlData } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(path)
+          imageUrl = urlData.publicUrl
           await supabase
             .from('products')
             .update({ image_url: imageUrl })
-            .eq('id', editVariant.products.id)
+            .eq('id', prod.id)
+        } else {
+          console.error('Upload error:', upErr)
         }
-        setMsg('Updated successfully.')
-      } else {
-        const { data: prod } = await supabase
-          .from('products')
-          .insert({ name: form.productName, gender: 'unisex', is_active: true })
-          .select()
-          .single()
-
-        if (prod) {
-          let imageUrl = null
-          if (imageFile) {
-            imageUrl = await uploadImage(prod.id)
-          }
-          if (imageUrl) {
-            await supabase.from('products').update({ image_url: imageUrl }).eq('id', prod.id)
-          }
-
-          const { data: variant } = await supabase
-            .from('product_variants')
-            .insert({
-              product_id: prod.id,
-              sku: form.sku,
-              barcode: form.barcode || null,
-              size: form.size,
-              color: form.color,
-              price: parseFloat(form.price),
-              cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-              is_active: true,
-            })
-            .select()
-            .single()
-
-          if (variant) {
-            await supabase.from('inventory').insert({
-              variant_id: variant.id,
-              store_id: STORE_ID,
-              qty_on_hand: 0,
-              reorder_point: 5,
-            })
-          }
-        }
-        setMsg('Product created. Go to Inventory to set stock quantity.')
       }
-      loadData()
-      setShowForm(false)
-    } catch (e) {
-      setMsg('Error: ' + e.message)
+
+      const { data: variant, error: varErr } = await supabase
+        .from('product_variants')
+        .insert({
+          product_id: prod.id,
+          sku: form.sku,
+          barcode: form.barcode || null,
+          size: form.size,
+          color: form.color,
+          price: parseFloat(form.price),
+          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+          is_active: true,
+        })
+        .select()
+        .single()
+
+      if (!varErr && variant) {
+        await supabase.from('inventory').insert({
+          variant_id: variant.id,
+          store_id: STORE_ID,
+          qty_on_hand: 0,
+          reorder_point: 5,
+        })
+      }
+
+      setMsg(imageUrl
+        ? 'Product created with image. Set stock in Inventory.'
+        : 'Product created. Set stock in Inventory.')
     }
-    setSaving(false)
+
+    loadData()
+    setShowForm(false)
+    setImageFile(null)
+    setImagePreview(null)
+
+  } catch (e) {
+    setMsg('Error: ' + e.message)
   }
+  setSaving(false)
+}
 
   async function toggleActive(v) {
     await supabase.from('product_variants').update({ is_active: !v.is_active }).eq('id', v.id)

@@ -86,41 +86,40 @@ export default function LoginPage() {
   }, [pin])
 
   async function verifyPin() {
-    if (!selectedStaff) {
-      setError('Please select a staff member first.')
+  if (!selectedStaff) {
+    setError('Please select a staff member first.')
+    setPin('')
+    return
+  }
+  setVerifying(true)
+  try {
+    const { data, error: dbError } = await supabase
+      .from('staff')
+      .select('id, full_name, role, store_id, pin_hash')
+      .eq('id', selectedStaff.id)
+      .single()
+
+    if (dbError || !data || data.pin_hash !== pin) {
+      setError('Incorrect PIN. Please try again.')
       setPin('')
+      setVerifying(false)
       return
     }
-    setVerifying(true)
-    try {
-      const { data, error: dbError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('id', selectedStaff.id)
-        .eq('pin_hash', pin)
-        .eq('is_active', true)
-        .single()
 
-      if (dbError || !data) {
-        setError('Incorrect PIN. Please try again.')
-        setPin('')
-        return
-      }
+    await supabase
+      .from('staff')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', data.id)
 
-      await supabase
-        .from('staff')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', data.id)
-
-      login(data)
-      navigate('/pos')
-    } catch (err) {
-      setError('Login failed. Please try again.')
-      setPin('')
-    } finally {
-      setVerifying(false)
-    }
+    login(data)
+    navigate('/pos')
+  } catch (err) {
+    setError('Login failed. Please try again.')
+    setPin('')
+  } finally {
+    setVerifying(false)
   }
+}
 
   const numpadKeys = ['1','2','3','4','5','6','7','8','9','⌫','0','✕']
 

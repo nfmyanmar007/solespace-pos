@@ -5,6 +5,27 @@ import AdminLayout from './AdminLayout'
 import { formatMMK } from '../../lib/currency'
 
 const STORE_ID = 'a0000000-0000-0000-0000-000000000001'
+const CLOUDINARY_CLOUD_NAME = 'ddkrznjvx'
+const CLOUDINARY_UPLOAD_PRESET = 'solespace_pos'
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+  formData.append('folder', 'solespace_pos')
+
+  const response = await fetch(
+    'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload',
+    { method: 'POST', body: formData }
+  )
+
+  if (!response.ok) {
+    throw new Error('Image upload failed: ' + response.statusText)
+  }
+
+  const data = await response.json()
+  return data.secure_url
+}
 
 export default function AdminProducts() {
   const [variants, setVariants] = useState([])
@@ -16,7 +37,6 @@ export default function AdminProducts() {
   const [msg, setMsg] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
-  const [uploading, setUploading] = useState(false)
 
   const [form, setForm] = useState({
     productName: '',
@@ -77,145 +97,112 @@ export default function AdminProducts() {
   function handleImageChange(e) {
     const file = e.target.files[0]
     if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setMsg('Image too large. Max 5MB.')
+      return
+    }
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
   }
 
-  async function uploadImage(productId) {
-    if (!imageFile) return null
-    setUploading(true)
-    const ext = imageFile.name.split('.').pop()
-    const path = 'products/' + productId + '.' + ext
-    const { error } = await supabase.storage
-      .from('product-images')
-      .upload(path, imageFile, { upsert: true })
-    setUploading(false)
-    if (error) { console.error(error); return null }
-    const { data } = supabase.storage.from('product-images').getPublicUrl(path)
-    return data.publicUrl
-  }
-
   async function handleSave() {
-  if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
-    setMsg('Please fill all required fields.')
-    return
-  }
-  setSaving(true)
-  setMsg('')
-  try {
-    if (editVariant) {
+    if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
+      setMsg('Please fill all required fields.')
+      return
+    }
+    setSaving(true)
+    setMsg('Saving...')
+
+    try {
       let imageUrl = form.imageUrl
 
-      if (imageFile && editVariant.products) {
-        setMsg('Uploading image...')
-        const ext = imageFile.name.split('.').pop()
-        const path = 'products/' + editVariant.products.id + '-' + Date.now() + '.' + ext
-        const { error: upErr } = await supabase.storage
-          .from('product-images')
-          .upload(path, imageFile, { upsert: true })
-        if (!upErr) {
-          const { data: urlData } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(path)
-          imageUrl = urlData.publicUrl
-        }
-      }
-
-      await supabase
-        .from('product_variants')
-        .update({
-          sku: form.sku,
-          barcode: form.barcode || null,
-          size: form.size,
-          color: form.color,
-          price: parseFloat(form.price),
-          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-        })
-        .eq('id', editVariant.id)
-
-      if (editVariant.products) {
-        await supabase
-          .from('products')
-          .update({ image_url: imageUrl || null })
-          .eq('id', editVariant.products.id)
-      }
-
-      setMsg('Updated successfully.')
-
-    } else {
-      const { data: prod, error: prodErr } = await supabase
-        .from('products')
-        .insert({ name: form.productName, gender: 'unisex', is_active: true })
-        .select()
-        .single()
-
-      if (prodErr || !prod) {
-        setMsg('Error creating product: ' + (prodErr ? prodErr.message : 'unknown'))
-        setSaving(false)
-        return
-      }
-
-      let imageUrl = null
       if (imageFile) {
         setMsg('Uploading image...')
-        const ext = imageFile.name.split('.').pop()
-        const path = 'products/' + prod.id + '-' + Date.now() + '.' + ext
-        const { error: upErr } = await supabase.storage
-          .from('product-images')
-          .upload(path, imageFile, { upsert: true })
-        if (!upErr) {
-          const { data: urlData } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(path)
-          imageUrl = urlData.publicUrl
-          await supabase
-            .from('products')
-            .update({ image_url: imageUrl })
-            .eq('id', prod.id)
-        } else {
-          console.error('Upload error:', upErr)
+        try {
+          imageUrl = await uploadToCloudinary(imageFile)
+          setMsg('Image uploaded. Saving product...')
+        } catch (uploadErr) {
+          setMsg('Image upload failed: ' + uploadErr.message)
+          setSaving(false)
+          return
         }
       }
 
-      const { data: variant, error: varErr } = await supabase
-        .from('product_variants')
-        .insert({
-          product_id: prod.id,
-          sku: form.sku,
-          barcode: form.barcode || null,
-          size: form.size,
-          color: form.color,
-          price: parseFloat(form.price),
-          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-          is_active: true,
-        })
-        .select()
-        .single()
+      if (editVariant) {
+        await supabase
+          .from('product_variants')
+          .update({
+            sku: form.sku,
+            barcode: form.barcode || null,
+            size: form.size,
+            color: form.color,
+            price: parseFloat(form.price),
+            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+          })
+          .eq('id', editVariant.id)
 
-      if (!varErr && variant) {
-        await supabase.from('inventory').insert({
-          variant_id: variant.id,
-          store_id: STORE_ID,
-          qty_on_hand: 0,
-          reorder_point: 5,
-        })
+        if (editVariant.products) {
+          await supabase
+            .from('products')
+            .update({ image_url: imageUrl || null })
+            .eq('id', editVariant.products.id)
+        }
+        setMsg('Updated successfully.')
+
+      } else {
+        const { data: prod, error: prodErr } = await supabase
+          .from('products')
+          .insert({
+            name: form.productName,
+            gender: 'unisex',
+            is_active: true,
+            image_url: imageUrl || null,
+          })
+          .select('id')
+          .single()
+
+        if (prodErr || !prod) {
+          setMsg('Error creating product: ' + (prodErr ? prodErr.message : 'unknown'))
+          setSaving(false)
+          return
+        }
+
+        const { data: variant } = await supabase
+          .from('product_variants')
+          .insert({
+            product_id: prod.id,
+            sku: form.sku,
+            barcode: form.barcode || null,
+            size: form.size,
+            color: form.color,
+            price: parseFloat(form.price),
+            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+            is_active: true,
+          })
+          .select('id')
+          .single()
+
+        if (variant) {
+          await supabase.from('inventory').insert({
+            variant_id: variant.id,
+            store_id: STORE_ID,
+            qty_on_hand: 0,
+            reorder_point: 5,
+          })
+        }
+        setMsg('Product created successfully.')
       }
 
-      setMsg(imageUrl
-        ? 'Product created with image. Set stock in Inventory.'
-        : 'Product created. Set stock in Inventory.')
+      loadData()
+      setShowForm(false)
+      setImageFile(null)
+      setImagePreview(null)
+
+    } catch (e) {
+      setMsg('Error: ' + e.message)
     }
-
-    loadData()
-    setShowForm(false)
-    setImageFile(null)
-    setImagePreview(null)
-
-  } catch (e) {
-    setMsg('Error: ' + e.message)
+    setSaving(false)
   }
-  setSaving(false)
-}
 
   async function toggleActive(v) {
     await supabase.from('product_variants').update({ is_active: !v.is_active }).eq('id', v.id)
@@ -239,7 +226,14 @@ export default function AdminProducts() {
         </div>
 
         {msg ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700 text-sm">{msg}</div>
+          <div className={
+            'border rounded-xl px-4 py-3 text-sm ' +
+            (msg.includes('Error') || msg.includes('failed')
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-blue-50 border-blue-200 text-blue-700')
+          }>
+            {msg}
+          </div>
         ) : null}
 
         {showForm ? (
@@ -247,7 +241,6 @@ export default function AdminProducts() {
             <h3 className="text-sm font-bold text-gray-800 mb-4">
               {editVariant ? 'Edit Variant' : 'Add New Product'}
             </h3>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-500 block mb-1">Product Name *</label>
@@ -260,7 +253,6 @@ export default function AdminProducts() {
                   placeholder="e.g. Air Max 270"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">SKU *</label>
                 <input
@@ -271,7 +263,6 @@ export default function AdminProducts() {
                   placeholder="e.g. NK-AM270-BLK-9"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Barcode</label>
                 <input
@@ -282,7 +273,6 @@ export default function AdminProducts() {
                   placeholder="e.g. 8801000000001"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Size *</label>
                 <input
@@ -293,7 +283,6 @@ export default function AdminProducts() {
                   placeholder="e.g. 9"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Color *</label>
                 <input
@@ -304,7 +293,6 @@ export default function AdminProducts() {
                   placeholder="e.g. Black"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Price (MMK) *</label>
                 <input
@@ -315,7 +303,6 @@ export default function AdminProducts() {
                   placeholder="e.g. 250000"
                 />
               </div>
-
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Cost Price (MMK)</label>
                 <input
@@ -326,7 +313,6 @@ export default function AdminProducts() {
                   placeholder="e.g. 120000"
                 />
               </div>
-
               <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-500 block mb-1">
                   Product Image (optional)
@@ -336,21 +322,21 @@ export default function AdminProducts() {
                     <img
                       src={imagePreview}
                       alt="preview"
-                      className="w-16 h-16 object-cover rounded-xl border border-gray-200"
+                      className="w-16 h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center text-2xl">
+                    <div className="w-16 h-16 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center text-2xl flex-shrink-0">
                       👟
                     </div>
                   )}
                   <div className="flex-1">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       onChange={handleImageChange}
-                      className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700"
+                      className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer"
                     />
-                    <p className="text-xs text-gray-400 mt-1">JPG, PNG or WEBP. Max 2MB.</p>
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG or WEBP. Max 5MB.</p>
                   </div>
                 </div>
               </div>
@@ -358,17 +344,17 @@ export default function AdminProducts() {
 
             <div className="flex gap-3 mt-4">
               <button
-                onClick={function() { setShowForm(false) }}
+                onClick={function() { setShowForm(false); setImageFile(null); setImagePreview(null) }}
                 className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || uploading}
+                disabled={saving}
                 className="flex-1 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 disabled:opacity-50"
               >
-                {uploading ? 'Uploading image...' : saving ? 'Saving...' : 'Save'}
+                {saving ? msg || 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

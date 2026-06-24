@@ -21,7 +21,7 @@ export default function AdminInventory() {
     setLoading(true)
     const { data } = await supabase
       .from('inventory')
-      .select('id, qty_on_hand, reorder_point, updated_at, product_variants ( id, sku, size, color, price, products ( name ) )')
+      .select('id, qty_on_hand, reorder_point, updated_at, product_variants ( id, sku, size, color, price, products ( name, image_url ) )')
       .eq('store_id', STORE_ID)
       .order('qty_on_hand', { ascending: true })
     setInventory(data || [])
@@ -47,7 +47,7 @@ export default function AdminInventory() {
       .from('inventory')
       .update({ qty_on_hand: parseInt(newQty), updated_at: new Date().toISOString() })
       .eq('id', editRow.id)
-    setMsg('Stock updated for ' + (editRow.product_variants ? editRow.product_variants.sku : ''))
+    setMsg('Stock updated successfully.')
     setEditRow(null)
     setNewQty('')
     setSaving(false)
@@ -96,16 +96,31 @@ export default function AdminInventory() {
 
         {editRow ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <h3 className="text-sm font-bold text-gray-800 mb-1">Update Stock</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              {editRow.product_variants ? editRow.product_variants.products.name : ''} —
-              Sz {editRow.product_variants ? editRow.product_variants.size : ''} —
-              {editRow.product_variants ? editRow.product_variants.color : ''}
-            </p>
+            <div className="flex items-center gap-4 mb-4">
+              {editRow.product_variants && editRow.product_variants.products && editRow.product_variants.products.image_url ? (
+                <img
+                  src={editRow.product_variants.products.image_url}
+                  alt="product"
+                  className="w-14 h-14 object-cover rounded-xl border border-gray-200"
+                />
+              ) : (
+                <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">
+                  👟
+                </div>
+              )}
+              <div>
+                <h3 className="text-sm font-bold text-gray-800">Update Stock</h3>
+                <p className="text-xs text-gray-400">
+                  {editRow.product_variants ? editRow.product_variants.products.name : ''} —
+                  Sz {editRow.product_variants ? editRow.product_variants.size : ''} —
+                  {editRow.product_variants ? editRow.product_variants.color : ''}
+                </p>
+              </div>
+            </div>
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs font-medium text-gray-500 block mb-1">
-                  Current: {editRow.qty_on_hand} units
+                  Current stock: {editRow.qty_on_hand} units
                 </label>
                 <input
                   type="number"
@@ -169,6 +184,7 @@ export default function AdminInventory() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Image</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Product</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">SKU</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Size</th>
@@ -181,12 +197,31 @@ export default function AdminInventory() {
                 <tbody>
                   {filtered.map(function(row) {
                     const v = row.product_variants
+                    const imgUrl = v && v.products ? v.products.image_url : null
                     let statusClass = 'bg-green-100 text-green-700'
                     let statusText = 'OK'
-                    if (row.qty_on_hand === 0) { statusClass = 'bg-red-100 text-red-700'; statusText = 'Out of stock' }
-                    else if (row.qty_on_hand <= row.reorder_point) { statusClass = 'bg-yellow-100 text-yellow-700'; statusText = 'Low stock' }
+                    if (row.qty_on_hand === 0) {
+                      statusClass = 'bg-red-100 text-red-700'
+                      statusText = 'Out of stock'
+                    } else if (row.qty_on_hand <= row.reorder_point) {
+                      statusClass = 'bg-yellow-100 text-yellow-700'
+                      statusText = 'Low stock'
+                    }
                     return (
                       <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          {imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt="product"
+                              className="w-10 h-10 object-cover rounded-lg border border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-lg">
+                              👟
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs font-medium text-gray-800">
                           {v && v.products ? v.products.name : 'Unknown'}
                         </td>
@@ -201,7 +236,11 @@ export default function AdminInventory() {
                         </td>
                         <td className="px-4 py-3">
                           <button
-                            onClick={function() { setEditRow(row); setNewQty(String(row.qty_on_hand)); setMsg('') }}
+                            onClick={function() {
+                              setEditRow(row)
+                              setNewQty(String(row.qty_on_hand))
+                              setMsg('')
+                            }}
                             className="text-xs text-blue-600 hover:underline"
                           >
                             Update stock

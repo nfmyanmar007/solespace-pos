@@ -118,103 +118,118 @@ export default function AdminProducts() {
   }
 
   async function handleSave() {
-    if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
-      setMsg('Please fill all required fields.')
-      return
-    }
-    setSaving(true)
-    setMsg('Saving...')
-
-    try {
-      let imageUrl = form.imageUrl
-
-      if (imageFile) {
-        setMsg('Uploading image...')
-        try {
-          imageUrl = await uploadToCloudinary(imageFile)
-          setMsg('Image uploaded. Saving product...')
-        } catch (uploadErr) {
-          setMsg('Image upload failed: ' + uploadErr.message)
-          setSaving(false)
-          return
-        }
-      }
-
-      if (editVariant) {
-        await supabase
-          .from('product_variants')
-          .update({
-            sku: form.sku,
-            barcode: form.barcode || null,
-            size: form.size,
-            color: form.color,
-            price: parseFloat(form.price),
-            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-          })
-          .eq('id', editVariant.id)
-
-        if (editVariant.products) {
-          await supabase
-            .from('products')
-            .update({ image_url: imageUrl || null })
-            .eq('id', editVariant.products.id)
-        }
-        setMsg('Updated successfully.')
-
-      } else {
-        const { data: prod, error: prodErr } = await supabase
-          .from('products')
-          .insert({
-            name: form.productName,
-            gender: 'unisex',
-            is_active: true,
-            image_url: imageUrl || null,
-          })
-          .select('id')
-          .single()
-
-        if (prodErr || !prod) {
-          setMsg('Error creating product: ' + (prodErr ? prodErr.message : 'unknown'))
-          setSaving(false)
-          return
-        }
-
-        const { data: variant } = await supabase
-          .from('product_variants')
-          .insert({
-            product_id: prod.id,
-            sku: form.sku,
-            barcode: form.barcode || null,
-            size: form.size,
-            color: form.color,
-            price: parseFloat(form.price),
-            cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
-            is_active: true,
-          })
-          .select('id')
-          .single()
-
-        if (variant) {
-          await supabase.from('inventory').insert({
-            variant_id: variant.id,
-            store_id: STORE_ID,
-            qty_on_hand: 0,
-            reorder_point: 5,
-          })
-        }
-        setMsg('Product created successfully.')
-      }
-
-      loadData()
-      setShowForm(false)
-      setImageFile(null)
-      setImagePreview(null)
-
-    } catch (e) {
-      setMsg('Error: ' + e.message)
-    }
-    setSaving(false)
+  if (!form.productName || !form.sku || !form.size || !form.color || !form.price) {
+    setMsg('Please fill all required fields.')
+    return
   }
+  setSaving(true)
+  setMsg('Saving...')
+
+  try {
+    let imageUrl = form.imageUrl
+
+    if (imageFile) {
+      setMsg('Uploading image...')
+      console.log('Uploading file:', imageFile.name)
+
+      const fd = new FormData()
+      fd.append('upload_preset', 'solespace_pos')
+      fd.append('file', imageFile)
+
+      const response = await fetch(
+        'https://api.cloudinary.com/v1_1/ddkrznjvx/image/upload',
+        { method: 'POST', body: fd }
+      )
+      const data = await response.json()
+      console.log('Cloudinary response:', data)
+
+      if (data.secure_url) {
+        imageUrl = data.secure_url
+        console.log('Image URL:', imageUrl)
+      } else {
+        setMsg('Image upload failed: ' + (data.error ? data.error.message : 'unknown'))
+        setSaving(false)
+        return
+      }
+    }
+
+    if (editVariant) {
+      await supabase
+        .from('product_variants')
+        .update({
+          sku: form.sku,
+          barcode: form.barcode || null,
+          size: form.size,
+          color: form.color,
+          price: parseFloat(form.price),
+          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+        })
+        .eq('id', editVariant.id)
+
+      if (editVariant.products) {
+        const { error: imgErr } = await supabase
+          .from('products')
+          .update({ image_url: imageUrl || null })
+          .eq('id', editVariant.products.id)
+        console.log('Image URL save error:', imgErr)
+      }
+      setMsg('Updated successfully.')
+
+    } else {
+      const { data: prod, error: prodErr } = await supabase
+        .from('products')
+        .insert({
+          name: form.productName,
+          gender: 'unisex',
+          is_active: true,
+          image_url: imageUrl || null,
+        })
+        .select('id')
+        .single()
+
+      if (prodErr || !prod) {
+        setMsg('Error: ' + (prodErr ? prodErr.message : 'unknown'))
+        setSaving(false)
+        return
+      }
+
+      const { data: variant } = await supabase
+        .from('product_variants')
+        .insert({
+          product_id: prod.id,
+          sku: form.sku,
+          barcode: form.barcode || null,
+          size: form.size,
+          color: form.color,
+          price: parseFloat(form.price),
+          cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+          is_active: true,
+        })
+        .select('id')
+        .single()
+
+      if (variant) {
+        await supabase.from('inventory').insert({
+          variant_id: variant.id,
+          store_id: STORE_ID,
+          qty_on_hand: 0,
+          reorder_point: 5,
+        })
+      }
+      setMsg('Product created successfully.')
+    }
+
+    loadData()
+    setShowForm(false)
+    setImageFile(null)
+    setImagePreview(null)
+
+  } catch (e) {
+    console.error('Save error:', e)
+    setMsg('Error: ' + e.message)
+  }
+  setSaving(false)
+}
 
   async function toggleActive(v) {
     await supabase.from('product_variants').update({ is_active: !v.is_active }).eq('id', v.id)

@@ -5,7 +5,7 @@ import Badge from '../ui/Badge'
 
 function StockBadge({ qty }) {
   if (qty === 0) return <Badge color="red">Out of stock</Badge>
-  if (qty <= 3) return <Badge color="yellow">Low: {qty} left</Badge>
+  if (qty <= 3) return <Badge color="yellow">{qty} left</Badge>
   return <Badge color="green">{qty} in stock</Badge>
 }
 
@@ -17,12 +17,12 @@ function ProductImage({ src, name }) {
         src={src}
         alt={name}
         onError={function() { setError(true) }}
-        className="w-12 h-12 object-cover rounded-xl border border-gray-200 flex-shrink-0"
+        className="w-14 h-14 object-cover rounded-xl border border-gray-200 flex-shrink-0"
       />
     )
   }
   return (
-    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-gray-100">
+    <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-gray-100">
       👟
     </div>
   )
@@ -39,8 +39,8 @@ export default function ProductList({ results, loading, query, onAdd }) {
 
   if (!query) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        <div className="text-4xl mb-3">👟</div>
+      <div className="text-center py-16 text-gray-400">
+        <div className="text-5xl mb-3">👟</div>
         <p className="text-sm">Search for a product or scan a barcode</p>
       </div>
     )
@@ -48,8 +48,8 @@ export default function ProductList({ results, loading, query, onAdd }) {
 
   if (results.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        <div className="text-4xl mb-3">🔍</div>
+      <div className="text-center py-16 text-gray-400">
+        <div className="text-5xl mb-3">🔍</div>
         <p className="text-sm">No products found for "{query}"</p>
       </div>
     )
@@ -59,9 +59,11 @@ export default function ProductList({ results, loading, query, onAdd }) {
     <div className="space-y-2">
       {results.map(function(item) {
         return (
-          <div
+          <button
             key={item.variantId}
-            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+            onClick={function() { if (item.stock > 0) onAdd(item) }}
+            disabled={item.stock === 0}
+            className="w-full flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 disabled:opacity-50 text-left"
           >
             <ProductImage src={item.imageUrl} name={item.productName} />
 
@@ -70,26 +72,22 @@ export default function ProductList({ results, loading, query, onAdd }) {
                 {item.productName}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Size {item.size} — {item.color} — {item.sku}
+                Sz {item.size} · {item.color}
               </p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="mt-1">
                 <StockBadge qty={item.stock} />
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
               <span className="text-sm font-bold text-gray-900">
                 {formatMMK(item.price)}
               </span>
-              <button
-                onClick={function() { onAdd(item) }}
-                disabled={item.stock === 0}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                + Add
-              </button>
+              <span className="text-xs text-blue-600 font-medium">
+                Tap to add
+              </span>
             </div>
-          </div>
+          </button>
         )
       })}
     </div>

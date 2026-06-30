@@ -104,42 +104,40 @@ export default function POSHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
 
-      {/* Top bar */}
-      <header className="bg-slate-800 text-white px-3 py-2.5 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
+      <header className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg flex-shrink-0">👟</span>
           <div className="min-w-0">
-            <p className="text-xs font-semibold leading-tight truncate">SoleSpace POS</p>
+            <p className="text-sm font-semibold leading-tight truncate">SoleSpace</p>
             <p className="text-xs text-slate-400 leading-tight truncate">
               {session ? session.staffName : ''}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={function() { navigate('/pos/summary') }}
-            className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg"
+            className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg font-medium"
           >
             Day
           </button>
-          <button
-            onClick={handleLogout}
-            className="text-slate-300 p-1.5"
-          >
-            <LogOut size={16} />
+          <button onClick={handleLogout} className="text-slate-300 p-1">
+            <LogOut size={17} />
           </button>
         </div>
       </header>
 
-      {/* Search + results — scrollable, padding bottom for sticky bar */}
-      <div className="flex-1 flex flex-col gap-2 p-3 pb-24 overflow-y-auto">
+      <div className="px-3 pt-3 pb-1 sticky top-12 bg-white z-20">
         <SearchBar
           value={query}
           onChange={setQuery}
           onClear={function() { setQuery(''); setResults([]) }}
         />
+      </div>
+
+      <div className="flex-1 px-3 pb-28 overflow-y-auto">
         <ProductList
           results={results}
           loading={loading}
@@ -148,16 +146,15 @@ export default function POSHome() {
         />
       </div>
 
-      {/* Sticky bottom cart bar */}
-      {itemCount > 0 && (
+      {itemCount > 0 ? (
         <button
           onClick={function() { setCartOpen(true) }}
           className="fixed bottom-0 left-0 right-0 bg-slate-800 text-white px-4 py-3.5 flex items-center justify-between shadow-2xl z-40 active:bg-slate-700"
         >
           <div className="flex items-center gap-2">
             <div className="relative">
-              <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 bg-white text-slate-800 text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <ShoppingCart size={19} />
+              <span className="absolute -top-1.5 -right-1.5 bg-white text-slate-800 text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {itemCount}
               </span>
             </div>
@@ -165,10 +162,9 @@ export default function POSHome() {
           </div>
           <span className="text-base font-bold">{formatMMK(total)}</span>
         </button>
-      )}
+      ) : null}
 
-      {/* Full cart sheet */}
-      {cartOpen && <CartSheet onClose={function() { setCartOpen(false) }} />}
+      {cartOpen ? <CartSheet onClose={function() { setCartOpen(false) }} /> : null}
     </div>
   )
 }

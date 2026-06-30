@@ -1,13 +1,12 @@
 import React from 'react'
-import { Minus, Plus, Trash2 } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { formatMMK } from '../../lib/currency'
 
 export default function CartItem({ item, onUpdateQty, onRemove }) {
   return (
-    <div className="flex items-center gap-2 py-2.5 border-b border-gray-100 last:border-0">
+    <div className="bg-white rounded-xl border border-gray-100 p-3 flex gap-3">
 
-      {/* Product image */}
-      <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 bg-gray-100 flex items-center justify-center">
+      <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
@@ -15,59 +14,60 @@ export default function CartItem({ item, onUpdateQty, onRemove }) {
             className="w-full h-full object-cover"
             onError={function(e) {
               e.target.style.display = 'none'
-              e.target.parentNode.innerHTML = '<span style="font-size:14px">👟</span>'
+              e.target.parentNode.innerHTML = '<span style="font-size:22px">👟</span>'
             }}
           />
         ) : (
-          <span className="text-sm">👟</span>
+          <span className="text-2xl">👟</span>
         )}
       </div>
 
-      {/* Product info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-gray-900 truncate">
+        <p className="text-sm font-semibold text-gray-900 truncate">
           {item.productName}
         </p>
-        <p className="text-xs text-gray-400">
-          Sz {item.size} · {item.color}
+        <p className="text-xs text-gray-400 mb-2">
+          Sz {item.size} — {item.color}
         </p>
-      </div>
 
-      {/* Qty controls */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={function() {
-            if (item.qty === 1) onRemove(item.variantId)
-            else onUpdateQty(item.variantId, item.qty - 1)
-          }}
-          className="w-6 h-6 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 active:scale-95"
-        >
-          {item.qty === 1
-            ? <Trash2 size={10} className="text-red-400" />
-            : <Minus size={10} />
-          }
-        </button>
-        <span className="w-6 text-center text-xs font-semibold text-gray-800">
-          {item.qty}
-        </span>
-        <button
-          onClick={function() { onUpdateQty(item.variantId, item.qty + 1) }}
-          className="w-6 h-6 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 active:scale-95"
-        >
-          <Plus size={10} />
-        </button>
-      </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={function() {
+                if (item.qty === 1) onRemove(item.variantId)
+                else onUpdateQty(item.variantId, item.qty - 1)
+              }}
+              className="w-7 h-7 flex items-center justify-center text-gray-600 active:bg-gray-100"
+            >
+              <Minus size={13} />
+            </button>
+            <span className="w-7 text-center text-sm font-semibold text-gray-900">
+              {item.qty}
+            </span>
+            <button
+              onClick={function() { onUpdateQty(item.variantId, item.qty + 1) }}
+              className="w-7 h-7 flex items-center justify-center text-gray-600 active:bg-gray-100"
+            >
+              <Plus size={13} />
+            </button>
+          </div>
 
-      {/* Line total */}
-      <div className="w-20 text-right flex-shrink-0">
-        <p className="text-xs font-bold text-gray-900">
-          {formatMMK(item.price * item.qty)}
-        </p>
-        {item.qty > 1 && (
-          <p className="text-xs text-gray-400">
-            {formatMMK(item.price)} ea
-          </p>
-        )}
+          <div className="text-right">
+            <p className="text-sm font-bold text-gray-900">
+              {formatMMK(item.price * item.qty)}
+            </p>
+            {item.qty > 1 ? (
+              <p className="text-xs text-gray-400">{formatMMK(item.price)} each</p>
+            ) : null}
+          </div>
+        </div>
+
+        <button
+          onClick={function() { onRemove(item.variantId) }}
+          className="text-xs text-blue-600 mt-2"
+        >
+          Remove
+        </button>
       </div>
     </div>
   )

@@ -34,11 +34,6 @@ async function uploadToCloudinary(file) {
 
   return data.secure_url
 }
-
-  const data = await response.json()
-  return data.secure_url
-}
-
 export default function AdminProducts() {
   const [variants, setVariants] = useState([])
   const [loading, setLoading] = useState(true)

@@ -1,12 +1,15 @@
 import React from 'react'
 import { formatMMK } from '../../lib/currency'
 import Spinner from '../ui/Spinner'
-import Badge from '../ui/Badge'
 
-function StockBadge({ qty }) {
-  if (qty === 0) return <Badge color="red">Out of stock</Badge>
-  if (qty <= 3) return <Badge color="yellow">{qty} left</Badge>
-  return <Badge color="green">{qty} in stock</Badge>
+function StockTag({ qty }) {
+  if (qty === 0) {
+    return <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Out of stock</span>
+  }
+  if (qty <= 3) {
+    return <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{qty} left</span>
+  }
+  return <span className="text-xs text-gray-400">{qty} in stock</span>
 }
 
 function ProductImage({ src, name }) {
@@ -17,12 +20,12 @@ function ProductImage({ src, name }) {
         src={src}
         alt={name}
         onError={function() { setError(true) }}
-        className="w-14 h-14 object-cover rounded-xl border border-gray-200 flex-shrink-0"
+        className="w-12 h-12 object-cover rounded-xl flex-shrink-0"
       />
     )
   }
   return (
-    <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-gray-100">
+    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
       👟
     </div>
   )
@@ -31,7 +34,7 @@ function ProductImage({ src, name }) {
 export default function ProductList({ results, loading, query, onAdd }) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-16">
         <Spinner size="md" color="blue" />
       </div>
     )
@@ -39,31 +42,32 @@ export default function ProductList({ results, loading, query, onAdd }) {
 
   if (!query) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <div className="text-5xl mb-3">👟</div>
-        <p className="text-sm">Search for a product or scan a barcode</p>
+      <div className="text-center py-20 text-gray-300">
+        <div className="text-5xl mb-4">👟</div>
+        <p className="text-sm text-gray-400">Search a product or scan a barcode</p>
       </div>
     )
   }
 
   if (results.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <div className="text-5xl mb-3">🔍</div>
-        <p className="text-sm">No products found for "{query}"</p>
+      <div className="text-center py-20 text-gray-300">
+        <div className="text-5xl mb-4">🔍</div>
+        <p className="text-sm text-gray-400">No products found for "{query}"</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-gray-100 -mx-3">
       {results.map(function(item) {
+        const out = item.stock === 0
         return (
           <button
             key={item.variantId}
-            onClick={function() { if (item.stock > 0) onAdd(item) }}
-            disabled={item.stock === 0}
-            className="w-full flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 disabled:opacity-50 text-left"
+            onClick={function() { if (!out) onAdd(item) }}
+            disabled={out}
+            className="w-full flex items-center gap-3 px-3 py-3 active:bg-gray-50 disabled:opacity-40 text-left"
           >
             <ProductImage src={item.imageUrl} name={item.productName} />
 
@@ -72,20 +76,17 @@ export default function ProductList({ results, loading, query, onAdd }) {
                 {item.productName}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Sz {item.size} · {item.color}
+                Sz {item.size} — {item.color}
               </p>
               <div className="mt-1">
-                <StockBadge qty={item.stock} />
+                <StockTag qty={item.stock} />
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              <span className="text-sm font-bold text-gray-900">
+            <div className="text-right flex-shrink-0">
+              <p className="text-sm font-bold text-gray-900">
                 {formatMMK(item.price)}
-              </span>
-              <span className="text-xs text-blue-600 font-medium">
-                Tap to add
-              </span>
+              </p>
             </div>
           </button>
         )

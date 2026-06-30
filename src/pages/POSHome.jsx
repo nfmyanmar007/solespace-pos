@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, ShoppingCart } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { useCart } from '../context/CartContext'
+import { useSale } from '../context/SaleContext'
+import { formatMMK } from '../lib/currency'
 import SearchBar from '../components/pos/SearchBar'
 import ProductList from '../components/pos/ProductList'
-import CartPanel from '../components/pos/CartPanel'
+import CartSheet from '../components/pos/CartSheet'
 
 const STORE_ID = 'a0000000-0000-0000-0000-000000000001'
 
 export default function POSHome() {
   const navigate = useNavigate()
   const { session, logout } = useSession()
-  const { addItem } = useCart()
+  const { addItem, itemCount, subtotal } = useCart()
+  const { discount } = useSale()
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+
+  const discountAmt = discount ? discount.calculatedAmt : 0
+  const total = Math.max(0, subtotal - discountAmt)
 
   const search = useCallback(async function(q) {
     if (!q.trim()) {
@@ -49,15 +56,11 @@ export default function POSHome() {
       })
 
       const mapped = unique.map(function(v) {
-        const storeInventory = (v.inventory || []).find(function(i) {
-          return i.store_id === STORE_ID
-        })
-        const imageUrl = v.products ? (v.products.image_url || null) : null
-        console.log('Product:', v.products ? v.products.name : '', 'Image:', imageUrl)
+        const storeInventory = (v.inventory || []).find(function(i) { return i.store_id === STORE_ID })
         return {
           variantId: v.id,
           productName: v.products ? v.products.name : 'Unknown',
-          imageUrl: imageUrl,
+          imageUrl: v.products ? (v.products.image_url || null) : null,
           sku: v.sku,
           size: v.size,
           color: v.color,
@@ -93,8 +96,6 @@ export default function POSHome() {
       },
       { name: item.productName }
     )
-    setQuery('')
-    setResults([])
   }
 
   function handleLogout() {
@@ -104,62 +105,70 @@ export default function POSHome() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">👟</span>
-          <div>
-            <p className="text-sm font-semibold leading-tight">SoleSpace POS</p>
-            <p className="text-xs text-slate-400 leading-tight">
-              Downtown - {session ? session.staffName : ''}
+
+      {/* Top bar */}
+      <header className="bg-slate-800 text-white px-3 py-2.5 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg flex-shrink-0">👟</span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold leading-tight truncate">SoleSpace POS</p>
+            <p className="text-xs text-slate-400 leading-tight truncate">
+              {session ? session.staffName : ''}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={function() { navigate('/pos/summary') }}
-            className="text-xs text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg"
           >
-            My Day
+            Day
           </button>
-          <button
-            onClick={function() { navigate('/admin-dashboard') }}
-            className="text-xs text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Admin
-          </button>
-          <span className="text-xs text-slate-400 capitalize bg-slate-700 px-2 py-1 rounded-full">
-            {session ? session.role : ''}
-          </span>
           <button
             onClick={handleLogout}
-            className="text-slate-400 hover:text-white transition-colors"
-            title="Sign out"
+            className="text-slate-300 p-1.5"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         </div>
       </header>
 
-      <div className="flex-1 flex gap-4 p-4 overflow-hidden">
-        <div className="flex-1 flex flex-col gap-3 min-w-0">
-          <SearchBar
-            value={query}
-            onChange={setQuery}
-            onClear={function() { setQuery(''); setResults([]) }}
-          />
-          <div className="flex-1 overflow-y-auto">
-            <ProductList
-              results={results}
-              loading={loading}
-              query={query}
-              onAdd={handleAdd}
-            />
-          </div>
-        </div>
-        <div className="w-72 flex-shrink-0">
-          <CartPanel />
-        </div>
+      {/* Search + results — scrollable, padding bottom for sticky bar */}
+      <div className="flex-1 flex flex-col gap-2 p-3 pb-24 overflow-y-auto">
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onClear={function() { setQuery(''); setResults([]) }}
+        />
+        <ProductList
+          results={results}
+          loading={loading}
+          query={query}
+          onAdd={handleAdd}
+        />
       </div>
+
+      {/* Sticky bottom cart bar */}
+      {itemCount > 0 && (
+        <button
+          onClick={function() { setCartOpen(true) }}
+          className="fixed bottom-0 left-0 right-0 bg-slate-800 text-white px-4 py-3.5 flex items-center justify-between shadow-2xl z-40 active:bg-slate-700"
+        >
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <ShoppingCart size={20} />
+              <span className="absolute -top-2 -right-2 bg-white text-slate-800 text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {itemCount}
+              </span>
+            </div>
+            <span className="text-sm font-semibold">View Cart</span>
+          </div>
+          <span className="text-base font-bold">{formatMMK(total)}</span>
+        </button>
+      )}
+
+      {/* Full cart sheet */}
+      {cartOpen && <CartSheet onClose={function() { setCartOpen(false) }} />}
     </div>
   )
 }

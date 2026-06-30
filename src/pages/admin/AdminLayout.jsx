@@ -1,7 +1,7 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, Package, Users, BarChart2, LogOut, Menu, Tag, Box } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, Users, BarChart2, LogOut, Menu, Box, X } from 'lucide-react'
 
 const NAV = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin-dashboard' },
@@ -39,11 +39,11 @@ export default function AdminLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside className={
-        'fixed inset-y-0 left-0 z-50 w-52 bg-slate-800 flex flex-col transform transition-transform duration-200 ' +
+        'fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 flex flex-col transform transition-transform duration-200 ' +
         (sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0') +
-        ' lg:relative'
+        ' lg:relative lg:w-52'
       }>
-        <div className="px-4 py-5 border-b border-slate-700">
+        <div className="px-4 py-5 border-b border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">👟</span>
             <div>
@@ -51,6 +51,12 @@ export default function AdminLayout({ children }) {
               <p className="text-slate-400 text-xs">Admin Panel</p>
             </div>
           </div>
+          <button
+            onClick={function() { setSidebarOpen(false) }}
+            className="lg:hidden text-slate-400 p-1"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
@@ -63,11 +69,11 @@ export default function AdminLayout({ children }) {
                 to={item.path}
                 onClick={function() { setSidebarOpen(false) }}
                 className={
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ' +
+                  'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ' +
                   (active ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white')
                 }
               >
-                <Icon size={16} />
+                <Icon size={18} />
                 {item.label}
               </Link>
             )
@@ -76,7 +82,7 @@ export default function AdminLayout({ children }) {
 
         <div className="px-4 py-4 border-t border-slate-700">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
+            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
               {session && session.staffName ? session.staffName.charAt(0) : 'A'}
             </div>
             <div className="flex-1 min-w-0">
@@ -90,7 +96,7 @@ export default function AdminLayout({ children }) {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white text-sm"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white text-sm"
           >
             <LogOut size={14} />
             Sign out
@@ -106,19 +112,16 @@ export default function AdminLayout({ children }) {
       ) : null}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 lg:px-6">
+        <header className="bg-white border-b border-gray-200 px-3 py-3 flex items-center gap-3 lg:px-6 sticky top-0 z-30">
           <button
             onClick={function() { setSidebarOpen(true) }}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="lg:hidden text-gray-500 p-1"
           >
-            <Menu size={20} />
+            <Menu size={22} />
           </button>
-          <h1 className="text-sm font-semibold text-gray-800 flex-1">{pageTitle}</h1>
-          <span className="text-xs text-gray-400">
-            {new Date().toLocaleDateString()}
-          </span>
+          <h1 className="text-sm font-semibold text-gray-800 flex-1 truncate">{pageTitle}</h1>
         </header>
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-3 lg:p-6 overflow-auto">
           {children}
         </main>
       </div>

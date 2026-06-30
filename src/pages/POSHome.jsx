@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, ShoppingCart } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { useCart } from '../context/CartContext'
@@ -137,7 +137,7 @@ export default function POSHome() {
         />
       </div>
 
-      <div className="flex-1 px-3 pb-28 overflow-y-auto">
+      <div className="flex-1 px-3 pb-16 overflow-y-auto">
         <ProductList
           results={results}
           loading={loading}
@@ -149,18 +149,15 @@ export default function POSHome() {
       {itemCount > 0 ? (
         <button
           onClick={function() { setCartOpen(true) }}
-          className="fixed bottom-0 left-0 right-0 bg-slate-800 text-white px-4 py-3.5 flex items-center justify-between shadow-2xl z-40 active:bg-slate-700"
+          className="fixed bottom-0 left-0 right-0 bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between shadow-2xl z-40 active:bg-slate-700"
         >
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <ShoppingCart size={19} />
-              <span className="absolute -top-1.5 -right-1.5 bg-white text-slate-800 text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {itemCount}
-              </span>
-            </div>
-            <span className="text-sm font-semibold">View Cart</span>
+            <span className="bg-white text-slate-800 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {itemCount}
+            </span>
+            <span className="text-xs font-medium text-slate-300">items</span>
           </div>
-          <span className="text-base font-bold">{formatMMK(total)}</span>
+          <span className="text-sm font-bold">{formatMMK(total)}</span>
         </button>
       ) : null}
 

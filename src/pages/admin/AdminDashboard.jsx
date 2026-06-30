@@ -138,7 +138,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Metric cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard
             label="Revenue today"
             value={loading ? '...' : formatMMK(metrics?.revenue || 0)}
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* Transactions — takes 2 columns */}
           <div className="lg:col-span-2">

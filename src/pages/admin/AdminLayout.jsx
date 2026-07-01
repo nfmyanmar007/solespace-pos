@@ -7,6 +7,7 @@ const NAV = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin-dashboard' },
   { label: 'Transactions', icon: ShoppingBag, path: '/admin-transactions' },
   { label: 'Products', icon: Package, path: '/admin-products' },
+  { label: 'General Items', icon: Box, path: '/admin-general' },
   { label: 'Inventory', icon: Box, path: '/admin-inventory' },
   { label: 'Staff', icon: Users, path: '/admin-staff' },
   { label: 'Customers', icon: Users, path: '/admin-customers' },

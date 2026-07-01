@@ -107,27 +107,43 @@ export default function POSHome() {
     <div className="min-h-screen bg-white flex flex-col">
 
       <header className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg flex-shrink-0">👟</span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold leading-tight truncate">SoleSpace</p>
-            <p className="text-xs text-slate-400 leading-tight truncate">
-              {session ? session.staffName : ''}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={function() { navigate('/pos/summary') }}
-            className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg font-medium"
-          >
-            Day
-          </button>
-          <button onClick={handleLogout} className="text-slate-300 p-1">
-            <LogOut size={17} />
-          </button>
-        </div>
-      </header>
+  <div className="flex items-center gap-2 min-w-0">
+    <span className="text-lg flex-shrink-0">👟</span>
+    <div className="min-w-0">
+      <p className="text-sm font-semibold leading-tight truncate">SoleSpace</p>
+      <p className="text-xs text-slate-400 leading-tight truncate">
+        {session ? session.staffName : ''}
+      </p>
+    </div>
+  </div>
+  <div className="flex items-center gap-2 flex-shrink-0">
+    <button
+      onClick={function() { navigate('/pos/summary') }}
+      className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg font-medium"
+    >
+      My Day
+    </button>
+    {session && (session.role === 'admin' || session.role === 'manager') ? (
+      <button
+        onClick={function() {
+          localStorage.setItem('admin_session', JSON.stringify({
+            staffId: session.staffId,
+            staffName: session.staffName,
+            role: session.role,
+            storeId: session.storeId,
+          }))
+          navigate('/admin-dashboard')
+        }}
+        className="text-xs text-slate-300 bg-slate-600 border border-slate-500 px-2.5 py-1.5 rounded-lg font-medium"
+      >
+        Admin →
+      </button>
+    ) : null}
+    <button onClick={handleLogout} className="text-slate-300 p-1">
+      <LogOut size={17} />
+    </button>
+  </div>
+</header>
 
       <div className="px-3 pt-3 pb-1 sticky top-12 bg-white z-20">
         <SearchBar

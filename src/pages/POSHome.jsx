@@ -114,7 +114,7 @@ export default function POSHome() {
     }
     addItem(
       {
-        id: 'custom-' + Date.now(),
+        id: '00000000-0000-0000-0000-000000000099',
         sku: customForm.barcode || 'CUSTOM',
         size: null,
         color: null,

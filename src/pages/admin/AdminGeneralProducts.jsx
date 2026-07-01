@@ -15,12 +15,13 @@ export default function AdminGeneralProducts() {
   const [msg, setMsg] = useState('')
 
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    barcode: '',
-    price: '',
-    stock: '',
-  })
+  name: '',
+  description: '',
+  barcode: '',
+  price: '',
+  costPrice: '',
+  stock: '',
+})
 
   useEffect(function() { loadProducts() }, [])
 
@@ -47,12 +48,13 @@ export default function AdminGeneralProducts() {
     const inv = variant && variant.inventory ? variant.inventory[0] : null
     setEditProduct(p)
     setForm({
-      name: p.name,
-      description: p.description || '',
-      barcode: variant ? (variant.barcode || '') : '',
-      price: variant ? String(variant.price) : '',
-      stock: inv ? String(inv.qty_on_hand) : '0',
-    })
+  name: p.name,
+  description: p.description || '',
+  barcode: variant ? (variant.barcode || '') : '',
+  price: variant ? String(variant.price) : '',
+  costPrice: variant ? String(variant.cost_price || '') : '',
+  stock: inv ? String(inv.qty_on_hand) : '0',
+})
     setShowForm(true)
     setMsg('')
   }
@@ -74,12 +76,13 @@ export default function AdminGeneralProducts() {
         const variant = editProduct.product_variants ? editProduct.product_variants[0] : null
         if (variant) {
           await supabase
-            .from('product_variants')
-            .update({
-              barcode: form.barcode || null,
-              price: parseFloat(form.price),
-            })
-            .eq('id', variant.id)
+  .from('product_variants')
+  .update({
+    barcode: form.barcode || null,
+    price: parseFloat(form.price),
+    cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+  })
+  .eq('id', variant.id)
 
           const inv = variant.inventory ? variant.inventory[0] : null
           if (inv) {
@@ -105,16 +108,17 @@ export default function AdminGeneralProducts() {
         if (prod) {
           const sku = 'GEN-' + form.name.toUpperCase().replace(/\s+/g, '-').slice(0, 15)
           const { data: variant } = await supabase
-            .from('product_variants')
-            .insert({
-              product_id: prod.id,
-              sku: sku,
-              barcode: form.barcode || null,
-              size: 'ONE',
-              color: 'N/A',
-              price: parseFloat(form.price),
-              is_active: true,
-            })
+  .from('product_variants')
+  .insert({
+    product_id: prod.id,
+    sku: sku,
+    barcode: form.barcode || null,
+    size: 'ONE',
+    color: 'N/A',
+    price: parseFloat(form.price),
+    cost_price: form.costPrice ? parseFloat(form.costPrice) : null,
+    is_active: true,
+  })
             .select('id')
             .single()
 
@@ -207,29 +211,39 @@ export default function AdminGeneralProducts() {
                   placeholder="Scan or type barcode"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-500 block mb-1">Price (MMK) *</label>
-                  <input
-                    type="number"
-                    value={form.price}
-                    onChange={function(e) { setForm(Object.assign({}, form, { price: e.target.value })) }}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
-                    placeholder="e.g. 3000"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 block mb-1">Stock Qty</label>
-                  <input
-                    type="number"
-                    value={form.stock}
-                    onChange={function(e) { setForm(Object.assign({}, form, { stock: e.target.value })) }}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
-                    placeholder="e.g. 50"
-                    min="0"
-                  />
-                </div>
-              </div>
+             <div className="grid grid-cols-2 gap-3">
+  <div>
+    <label className="text-xs font-medium text-gray-500 block mb-1">Price (MMK) *</label>
+    <input
+      type="number"
+      value={form.price}
+      onChange={function(e) { setForm(Object.assign({}, form, { price: e.target.value })) }}
+      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
+      placeholder="e.g. 3000"
+    />
+  </div>
+  <div>
+    <label className="text-xs font-medium text-gray-500 block mb-1">Cost Price (MMK)</label>
+    <input
+      type="number"
+      value={form.costPrice}
+      onChange={function(e) { setForm(Object.assign({}, form, { costPrice: e.target.value })) }}
+      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
+      placeholder="e.g. 1500"
+    />
+  </div>
+  <div className="col-span-2">
+    <label className="text-xs font-medium text-gray-500 block mb-1">Stock Qty</label>
+    <input
+      type="number"
+      value={form.stock}
+      onChange={function(e) { setForm(Object.assign({}, form, { stock: e.target.value })) }}
+      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
+      placeholder="e.g. 50"
+      min="0"
+    />
+  </div>
+</div>
             </div>
             <div className="flex gap-3 mt-4">
               <button
@@ -272,11 +286,14 @@ export default function AdminGeneralProducts() {
                       <p className="text-xs text-gray-400">{p.description || 'No description'}</p>
                     </div>
                     <div className="text-center flex-shrink-0">
-                      <p className="text-xs font-bold text-gray-900">
-                        {variant ? formatMMK(variant.price) : '—'}
-                      </p>
-                      <p className="text-xs text-gray-400">{stock} in stock</p>
-                    </div>
+  <p className="text-xs font-bold text-gray-900">
+    {variant ? formatMMK(variant.price) : '—'}
+  </p>
+  {variant && variant.cost_price ? (
+    <p className="text-xs text-gray-400">Cost: {formatMMK(variant.cost_price)}</p>
+  ) : null}
+  <p className="text-xs text-gray-400">{stock} in stock</p>
+</div>
                     <span className={
                       'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ' +
                       (p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')

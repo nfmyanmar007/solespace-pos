@@ -80,28 +80,36 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        <div className="px-4 py-4 border-t border-slate-700">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-              {session && session.staffName ? session.staffName.charAt(0) : 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium truncate">
-                {session ? session.staffName : 'Admin'}
-              </p>
-              <p className="text-slate-400 text-xs capitalize">
-                {session ? session.role : ''}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white text-sm"
-          >
-            <LogOut size={14} />
-            Sign out
-          </button>
-        </div>
+      <div className="px-4 py-4 border-t border-slate-700">
+  <div className="flex items-center gap-2 mb-3">
+    <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+      {session && session.staffName ? session.staffName.charAt(0) : 'A'}
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-white text-xs font-medium truncate">
+        {session ? session.staffName : 'Admin'}
+      </p>
+      <p className="text-slate-400 text-xs capitalize">
+        {session ? session.role : ''}
+      </p>
+    </div>
+  </div>
+  <Link
+    to="/pos"
+    onClick={function() { setSidebarOpen(false) }}
+    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white text-sm mb-1"
+  >
+    <span className="text-base">👟</span>
+    Back to POS
+  </Link>
+  <button
+    onClick={handleLogout}
+    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white text-sm"
+  >
+    <LogOut size={14} />
+    Sign out
+  </button>
+</div>
       </aside>
 
       {sidebarOpen ? (

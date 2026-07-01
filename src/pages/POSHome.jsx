@@ -142,7 +142,7 @@ export default function POSHome() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg flex-shrink-0">👟</span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold leading-tight truncate">SoleSpace</p>
+            <p className="text-sm font-semibold leading-tight truncate">Htoo Shoes Collection</p>
             <p className="text-xs text-slate-400 leading-tight truncate">
               {session ? session.staffName : ''}
             </p>

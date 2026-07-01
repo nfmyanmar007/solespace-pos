@@ -33,9 +33,10 @@ export default function AdminReports() {
   async function loadReport() {
     setLoading(true)
     const since = getDateRange()
+
     const { data: txns } = await supabase
       .from('transactions')
-      .select('id, total, subtotal, discount_amt, status, completed_at, staff ( full_name ), payments ( method )')
+      .select('id, ref_number, total, subtotal, discount_amt, status, completed_at, staff ( full_name ), payments ( method )')
       .eq('store_id', STORE_ID)
       .eq('status', 'completed')
       .gte('completed_at', since)
@@ -47,6 +48,41 @@ export default function AdminReports() {
     const cashTxns = safe.filter(function(t) { return t.payments && t.payments[0] && t.payments[0].method === 'cash' })
     const cardTxns = safe.filter(function(t) { return t.payments && t.payments[0] && t.payments[0].method === 'card' })
 
+    let totalProfit = 0
+    let totalCost = 0
+
+    if (safe.length > 0) {
+      const { data: items } = await supabase
+        .from('transaction_items')
+        .select('qty, unit_price, line_total, product_variants ( cost_price, products ( name ) )')
+        .in('transaction_id', safe.map(function(t) { return t.id }))
+
+      const agg = {}
+      ;(items || []).forEach(function(item) {
+        const name = item.product_variants && item.product_variants.products
+          ? item.product_variants.products.name : 'Unknown'
+        const costPrice = item.product_variants ? (parseFloat(item.product_variants.cost_price) || 0) : 0
+        const lineRevenue = parseFloat(item.line_total) || 0
+        const lineCost = costPrice * item.qty
+        const lineProfit = lineRevenue - lineCost
+
+        totalCost += lineCost
+        totalProfit += lineProfit
+
+        if (!agg[name]) agg[name] = { name: name, qty: 0, revenue: 0, cost: 0, profit: 0 }
+        agg[name].qty += item.qty
+        agg[name].revenue += lineRevenue
+        agg[name].cost += lineCost
+        agg[name].profit += lineProfit
+      })
+
+      setTopProducts(Object.values(agg).sort(function(a, b) { return b.revenue - a.revenue }).slice(0, 10))
+    } else {
+      setTopProducts([])
+    }
+
+    const profitMargin = revenue > 0 ? (totalProfit / revenue) * 100 : 0
+
     setStats({
       revenue,
       count: safe.length,
@@ -54,26 +90,11 @@ export default function AdminReports() {
       discounts,
       cashCount: cashTxns.length,
       cardCount: cardTxns.length,
+      totalCost,
+      totalProfit,
+      profitMargin,
     })
     setTransactions(safe)
-
-    if (safe.length > 0) {
-      const { data: items } = await supabase
-        .from('transaction_items')
-        .select('qty, line_total, product_variants ( products ( name ) )')
-        .in('transaction_id', safe.map(function(t) { return t.id }))
-      const agg = {}
-      ;(items || []).forEach(function(item) {
-        const name = item.product_variants && item.product_variants.products
-          ? item.product_variants.products.name : 'Unknown'
-        if (!agg[name]) agg[name] = { name: name, qty: 0, revenue: 0 }
-        agg[name].qty += item.qty
-        agg[name].revenue += parseFloat(item.line_total)
-      })
-      setTopProducts(Object.values(agg).sort(function(a, b) { return b.revenue - a.revenue }).slice(0, 10))
-    } else {
-      setTopProducts([])
-    }
     setLoading(false)
   }
 
@@ -99,10 +120,10 @@ export default function AdminReports() {
   return (
     <AdminLayout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="text-lg font-bold text-gray-900">Sales Reports</h2>
-            <p className="text-sm text-gray-400">Revenue and transaction analysis</p>
+            <p className="text-sm text-gray-400">Revenue, profit and transaction analysis</p>
           </div>
           <div className="flex gap-2">
             {['today', 'week', 'month'].map(function(p) {
@@ -128,30 +149,51 @@ export default function AdminReports() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
                 <p className="text-xs text-gray-400 mb-1">Total Revenue</p>
-                <p className="text-xl font-bold text-gray-900">{formatMMK(stats ? stats.revenue : 0)}</p>
+                <p className="text-lg font-bold text-gray-900">{formatMMK(stats ? stats.revenue : 0)}</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
                 <p className="text-xs text-gray-400 mb-1">Transactions</p>
-                <p className="text-xl font-bold text-gray-900">{stats ? stats.count : 0}</p>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-400 mb-1">Average Sale</p>
-                <p className="text-xl font-bold text-gray-900">{formatMMK(stats ? stats.avg : 0)}</p>
+                <p className="text-lg font-bold text-gray-900">{stats ? stats.count : 0}</p>
+                <p className="text-xs text-gray-400 mt-1">Avg {formatMMK(stats ? stats.avg : 0)}</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
                 <p className="text-xs text-gray-400 mb-1">Total Discounts</p>
-                <p className="text-xl font-bold text-green-700">- {formatMMK(stats ? stats.discounts : 0)}</p>
+                <p className="text-lg font-bold text-red-600">- {formatMMK(stats ? stats.discounts : 0)}</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-400 mb-1">Cash Sales</p>
-                <p className="text-xl font-bold text-gray-900">{stats ? stats.cashCount : 0}</p>
+                <p className="text-xs text-gray-400 mb-1">Cash / Card</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {stats ? stats.cashCount : 0} / {stats ? stats.cardCount : 0}
+                </p>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-400 mb-1">Card Sales</p>
-                <p className="text-xl font-bold text-gray-900">{stats ? stats.cardCount : 0}</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                <p className="text-xs text-green-600 font-medium mb-1">Total Profit</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {formatMMK(stats ? stats.totalProfit : 0)}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Margin: {stats ? stats.profitMargin.toFixed(1) : 0}%
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <p className="text-xs text-blue-600 font-medium mb-1">Total Revenue</p>
+                <p className="text-2xl font-bold text-blue-700">
+                  {formatMMK(stats ? stats.revenue : 0)}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">After discounts</p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+                <p className="text-xs text-orange-600 font-medium mb-1">Total Cost</p>
+                <p className="text-2xl font-bold text-orange-700">
+                  {formatMMK(stats ? stats.totalCost : 0)}
+                </p>
+                <p className="text-xs text-orange-600 mt-1">Cost of goods sold</p>
               </div>
             </div>
 
@@ -160,21 +202,56 @@ export default function AdminReports() {
                 <div className="px-5 py-4 border-b border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-800">Top Products</h3>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {topProducts.map(function(p, i) {
-                    return (
-                      <div key={i} className="flex items-center gap-4 px-5 py-3">
-                        <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">
-                          {i + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">{p.name}</p>
-                          <p className="text-xs text-gray-400">{p.qty} units sold</p>
-                        </div>
-                        <p className="text-sm font-bold text-gray-900">{formatMMK(p.revenue)}</p>
-                      </div>
-                    )
-                  })}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">#</th>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Product</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-gray-400">Qty</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-gray-400">Revenue</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-gray-400">Cost</th>
+                        <th className="text-right px-5 py-3 text-xs font-medium text-gray-400">Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topProducts.map(function(p, i) {
+                        const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0
+                        return (
+                          <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                            <td className="px-5 py-3">
+                              <div className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">
+                                {i + 1}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3">
+                              <p className="text-xs font-medium text-gray-800">{p.name}</p>
+                              <p className="text-xs text-gray-400">{p.qty} units</p>
+                            </td>
+                            <td className="px-5 py-3 text-right text-xs text-gray-600">{p.qty}</td>
+                            <td className="px-5 py-3 text-right text-xs font-medium text-gray-900">
+                              {formatMMK(p.revenue)}
+                            </td>
+                            <td className="px-5 py-3 text-right text-xs text-gray-500">
+                              {p.cost > 0 ? formatMMK(p.cost) : '—'}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              {p.cost > 0 ? (
+                                <div>
+                                  <p className={'text-xs font-bold ' + (p.profit >= 0 ? 'text-green-600' : 'text-red-600')}>
+                                    {formatMMK(p.profit)}
+                                  </p>
+                                  <p className="text-xs text-gray-400">{margin.toFixed(0)}%</p>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-300">No cost set</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ) : null}
@@ -184,10 +261,7 @@ export default function AdminReports() {
                 <h3 className="text-sm font-semibold text-gray-800">
                   Transactions ({transactions.length})
                 </h3>
-                <button
-                  onClick={exportCSV}
-                  className="text-xs text-blue-600 hover:underline"
-                >
+                <button onClick={exportCSV} className="text-xs text-blue-600 hover:underline">
                   Export CSV
                 </button>
               </div>

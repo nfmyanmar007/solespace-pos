@@ -76,8 +76,11 @@ export default function ProductList({ results, loading, query, onAdd }) {
                 {item.productName}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Sz {item.size} — {item.color}
-              </p>
+  {item.isGeneral
+    ? (item.description || 'General item')
+    : 'Sz ' + item.size + ' — ' + item.color
+  }
+</p>
               <div className="mt-1">
                 <StockTag qty={item.stock} />
               </div>

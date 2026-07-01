@@ -2,11 +2,12 @@ import { supabase } from './supabase'
 
 const STORE_ID    = 'a0000000-0000-0000-0000-000000000001'
 const REGISTER_ID = 'c0000000-0000-0000-0000-000000000001'
+const CUSTOM_VARIANT_ID = '00000000-0000-0000-0000-000000000099'
 
 function generateRef() {
-  const d = new Date().toISOString().slice(0,10).replace(/-/g,'')
+  const d = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const r = Math.floor(Math.random() * 9000) + 1000
-  return `SS-${d}-${r}`
+  return 'SS-' + d + '-' + r
 }
 
 export async function saveTransaction({
@@ -46,14 +47,18 @@ export async function saveTransaction({
     if (txnError) throw txnError
 
     // 2. Insert line items
-    const lineItems = items.map((item) => ({
-      transaction_id: txn.id,
-      variant_id:     item.variantId,
-      qty:            item.qty,
-      unit_price:     item.price,
-      line_discount:  0,
-      line_total:     item.price * item.qty,
-    }))
+    // Custom items use the fixed CUSTOM_VARIANT_ID
+    const lineItems = items.map(function(item) {
+      const isCustom = item.isCustom === true || String(item.variantId).startsWith('custom-')
+      return {
+        transaction_id: txn.id,
+        variant_id:     isCustom ? CUSTOM_VARIANT_ID : item.variantId,
+        qty:            item.qty,
+        unit_price:     item.price,
+        line_discount:  0,
+        line_total:     item.price * item.qty,
+      }
+    })
 
     const { error: itemsError } = await supabase
       .from('transaction_items')
@@ -76,8 +81,11 @@ export async function saveTransaction({
 
     if (payError) throw payError
 
-    // 4. Decrement inventory
+    // 4. Decrement inventory — skip custom items
     for (const item of items) {
+      const isCustom = item.isCustom === true || String(item.variantId).startsWith('custom-')
+      if (isCustom) continue
+
       const { data: inv } = await supabase
         .from('inventory')
         .select('qty_on_hand')
@@ -117,6 +125,7 @@ export async function saveTransaction({
     }
 
     return { success: true, refNumber, transactionId: txn.id }
+
   } catch (err) {
     console.error('Transaction error:', err)
     return { success: false, error: err.message }

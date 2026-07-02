@@ -15,6 +15,7 @@ import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminReports from './pages/admin/AdminReports'
 import AdminTransactions from './pages/admin/AdminTransactions'
 import AdminGeneralProducts from './pages/admin/AdminGeneralProducts'
+import ChangePinPage from './pages/ChangePinPage'
 
 function ProtectedRoute({ children }) {
   const { session } = useSession()
@@ -49,7 +50,9 @@ export default function App() {
       <Route path="/admin-reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
       <Route path="/admin-transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
       <Route path="/admin-general" element={<AdminRoute><AdminGeneralProducts /></AdminRoute>} />
+      <Route path="/pos/change-pin" element={<ProtectedRoute><ChangePinPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      
     </Routes>
   )
 }

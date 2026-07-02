@@ -155,6 +155,12 @@ export default function POSHome() {
           >
             My Day
           </button>
+          <button
+  onClick={function() { navigate('/pos/change-pin') }}
+  className="text-xs text-slate-300 bg-slate-700 px-2.5 py-1.5 rounded-lg font-medium"
+>
+  PIN
+</button>
           {session && (session.role === 'admin' || session.role === 'manager') ? (
             <button
               onClick={function() {

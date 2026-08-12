@@ -1,15 +1,104 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#1e293b" />
-    <title>SoleSpace POS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fbf6f2" />
+  <meta name="description" content="A personal message." />
+  <title>A Message I Should Have Said Properly</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <main class="page-shell">
+    <section class="message-card" id="messageCard">
+      <div class="envelope-wrap" aria-hidden="true">
+        <div class="envelope">
+          <div class="envelope-flap"></div>
+          <div class="letter">♡</div>
+          <div class="envelope-front"></div>
+        </div>
+      </div>
+
+      <div id="introView" class="view active">
+        <p class="eyebrow">A message I should have said properly</p>
+        <h1 id="greeting">Hey...</h1>
+        <p class="intro-copy">
+          I know you may not want to hear from me, and I respect that.
+          I only wanted to say this once, clearly and sincerely.
+        </p>
+
+        <button class="primary-button" id="readButton" type="button">
+          Read my message
+        </button>
+
+        <p class="no-pressure">No reply is expected.</p>
+      </div>
+
+      <div id="messageView" class="view" hidden>
+        <p class="eyebrow">No excuses. No expectations.</p>
+        <h2>I’m sorry.</h2>
+
+        <div class="letter-copy">
+          <p>
+            I don't want to make things uncomfortable. I just wanted to say
+            something I should have said properly.
+          </p>
+
+          <p>
+            I'm truly sorry for the hurt I caused you. I regret hurting someone
+            who was important to me.
+          </p>
+
+          <p>
+            I understand that an apology doesn't mean you have to forgive me.
+            I can't undo the past, but I can be honest about how much I regret
+            what happened.
+          </p>
+
+          <p>
+            I'm not expecting an answer from you. Even if you never reply, I
+            wanted to apologize properly.
+          </p>
+
+          <p>
+            I appreciate the good memories we shared, and I genuinely hope you
+            find the happiness you deserve.
+          </p>
+
+          <p>
+            I hope you succeed in everything you're working toward. Wherever
+            life takes you, I hope it brings you happiness and peace.
+          </p>
+
+          <p>
+            I don't expect another chance. I just wanted to acknowledge the
+            hurt I caused and say that I'm sorry.
+          </p>
+        </div>
+
+        <div class="closing">
+          <p class="closing-main">
+            Be happy. Be successful. Take care of yourself. <span aria-hidden="true">❤️</span>
+          </p>
+          <p class="closing-small">
+            You don't have to reply. I just wanted you to know that I'm sorry.
+          </p>
+        </div>
+
+        <div class="signature" id="signature"></div>
+      </div>
+    </section>
+
+    <p class="privacy-note" id="privacyNote">
+      Privacy note: this page can record only that the page was opened and that
+      the message was revealed. It does not intentionally store your IP address,
+      location, device details, or answers.
+    </p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
 </html>

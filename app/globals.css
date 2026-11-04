@@ -101,3 +101,44 @@
  .mobileLastPrice{font-size:18px}
  .mobileCardLevels b{font-size:11px}
 }
+
+
+/* V2.2 technical analysis: isolated research display */
+.chartOverlayToggles{display:flex;gap:8px;padding:10px 24px 0;flex-wrap:wrap}
+.chartOverlayToggles button{border:1px solid #35485d;background:#162537;color:#b4c3d5;border-radius:8px;padding:9px 11px;font-size:11px;font-weight:750}
+.chartOverlayToggles button.isActive{border-color:#4bb1aa;background:#20453f;color:#9ce9d2}
+.chartOverlayToggles button:focus-visible{outline:2px solid #8dffe0;outline-offset:2px}
+.indicatorPanel{background:#0e1724;border-top:1px solid #2b394c;padding:22px 24px 24px}
+.indicatorHeading h3{font-size:17px;margin:0 0 5px;color:#e8eff7}
+.indicatorHeading p{font-size:11px;color:#98aabe;margin:0 0 14px}
+.indicatorMode{display:inline-flex;background:#203649;border-radius:6px;padding:4px 8px;margin-left:7px;color:#80d9c0;font-size:11px}
+.indicatorScore{display:flex;gap:18px;align-items:center;padding:17px;background:#172737;border:1px solid #37536a;border-radius:12px;margin-bottom:16px}
+.indicatorScoreNumber{display:flex;flex-direction:column;gap:5px;min-width:140px}
+.indicatorScoreNumber strong{color:#6ee6c5;font-size:27px;font-variant-numeric:tabular-nums}
+.indicatorScoreNumber span{font-size:11px;font-weight:750;color:#c7d9eb}
+.indicatorScoreText b{font-size:13px}
+.indicatorScoreText p{font-size:11px;color:#acc0d1;line-height:1.5;margin:6px 0}
+.indicatorScoreText span{font-size:10px;color:#9cc5bc}
+.indicatorMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.indicatorMetric{min-width:0;border:1px solid #2e4053;border-radius:10px;background:#142333;padding:13px;display:flex;flex-direction:column;gap:8px}
+.indicatorLabel{font-size:10px;color:#8ca9c0;font-weight:800;letter-spacing:.5px}
+.indicatorMetric strong{color:#e3eff8;font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.indicatorMetric small{font-size:11px;color:#8ca5bb;line-height:1.35}
+.indicatorDetails{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.indicatorDetails>div{min-width:0;background:#152333;border:1px solid #2e4053;padding:14px;border-radius:9px}
+.indicatorDetails strong{font-size:12px}
+.indicatorDetails p,.indicatorDetails li{font-size:11px;line-height:1.55;color:#9bb1c5}
+.indicatorDetails ul{padding-left:17px;margin:8px 0 0}
+.indicatorDisclaimer{color:#829aaf;font-size:10px;line-height:1.55;margin:15px 0 0}
+@media(max-width:700px){
+ .chartOverlayToggles{padding:9px 12px 0}
+ .chartOverlayToggles button{flex:1;min-width:0;min-height:40px}
+ .indicatorPanel{padding:16px 12px}
+ .indicatorScore{padding:12px;gap:11px}
+ .indicatorScoreNumber{min-width:95px}
+ .indicatorScoreNumber strong{font-size:23px}
+ .indicatorMetrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .indicatorMetric{padding:11px 9px}
+ .indicatorMetric strong{font-size:13px}
+ .indicatorDetails{grid-template-columns:1fr}
+}

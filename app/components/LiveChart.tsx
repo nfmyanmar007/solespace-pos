@@ -27,7 +27,7 @@ export default function LiveChart({ticker}:{ticker:string}){
    }catch(e){if(active){setError(e instanceof Error?e.message:'Chart request failed');setBusy(false);}}
   };
   setBusy(true);setData(null);setSelected(null);load();
-  const refresh=setInterval(load,60_000);
+  const refresh=globalThis.setInterval(load,60_000);
   return ()=>{active=false;clearInterval(refresh);};
  },[ticker,interval,refreshKey]);
  const visible=useMemo(()=>data?.bars.slice(-windowSize)||[],[data,windowSize]);

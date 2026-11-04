@@ -11,7 +11,7 @@ export function marketState(now=new Date()){const wd=new Intl.DateTimeFormat('en
 export function evaluate(ticker:Ticker,bars:Bar[],now=new Date(),calendar?:SessionWindow|null):Signal{
  const blank:Signal={ticker,status:'WAIT',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:'Awaiting regular-session candles',timestamp:null,fresh:false,feed:'IEX'};
  const today=et(now.toISOString()).day;
- const valid=bars.filter(b=>{const v=et(b.t);const t=new Date(b.t).getTime();return v.day===today&&v.min>=240&&v.min<960&&Number.isFinite(t)&&t+60000<=now.getTime()&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&Number.isInteger(b.v)&&b.v>0&&b.l>0&&b.h>=Math.max(b.o,b.c,b.l)&&b.l<=Math.min(b.o,b.c)}).sort((a,b)=>a.t.localeCompare(b.t));
+ const valid=bars.filter(b=>{const t=Date.parse(b.t);if(!Number.isFinite(t))return false;const v=et(b.t);return v.day===today&&v.min>=240&&v.min<960&&Number.isFinite(t)&&t+60000<=now.getTime()&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&Number.isInteger(b.v)&&b.v>0&&b.l>0&&b.h>=Math.max(b.o,b.c,b.l)&&b.l<=Math.min(b.o,b.c)}).sort((a,b)=>a.t.localeCompare(b.t));
  const session=calendar===undefined?marketState(now):sessionState(now,calendar),clock=et(now.toISOString()).min;
  if(session==='CALENDAR UNAVAILABLE')return {...blank,status:'NO TRADE',reason:'Exchange calendar unavailable; fail closed'};
  if(session==='MARKET CLOSED')return {...blank,status:'NO TRADE',reason:'Exchange holiday or non-trading day'};

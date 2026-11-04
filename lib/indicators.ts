@@ -50,16 +50,19 @@ function bollinger(closes:number[],n=20){
  return {middle:safe(mean),upper:safe(mean+2*sd),lower:safe(mean-2*sd)};
 }
 function rvolValue(bar:Candle,intervalMinutes:number,history:HistoricalVolume[]):number|null{
- const target=slot(bar.time),perDate=new Map<string,number>();
+ const target=slot(bar.time),perDate=new Map<string,{total:number;minutes:Set<number>}>();
  for(const h of history){
   const p=slot(h.time);
   if(p.date>=target.date||!Number.isFinite(h.volume)||h.volume<=0)continue;
-  if(intervalMinutes===1){if(p.minute!==target.minute)continue;perDate.set(p.date,h.volume);}
-  else if(p.minute>=target.minute&&p.minute<target.minute+5){perDate.set(p.date,(perDate.get(p.date)||0)+h.volume);}
+  if(p.minute<target.minute||p.minute>=target.minute+intervalMinutes)continue;
+  const day=perDate.get(p.date)||{total:0,minutes:new Set<number>()};
+  if(!day.minutes.has(p.minute)){day.total+=h.volume;day.minutes.add(p.minute);}
+  perDate.set(p.date,day);
  }
- // Five independent prior sessions are required, each with a matching interval.
- if(perDate.size<5)return null;
- const vols=[...perDate.values()];
+ // Five independent *complete* prior sessions, same exact Eastern-time candle slot.
+ const complete=[...perDate.values()].filter(x=>x.minutes.size===intervalMinutes);
+ if(complete.length<5)return null;
+ const vols=complete.map(x=>x.total);
  const avg=vols.reduce((a,b)=>a+b,0)/vols.length;
  return avg>0?safe(bar.volume/avg):null;
 }

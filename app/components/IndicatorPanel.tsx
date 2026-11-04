@@ -12,7 +12,7 @@ export default function IndicatorPanel({rows,score,interval,stale}:{rows:Indicat
   <div className="indicatorHeading"><div><h3>Technical Analysis <span className="indicatorMode">{interval}</span></h3>
    <p>Completed candles · {quality} · Indicators do not place trades</p></div></div>
   <div className="indicatorScore">
-   <div className="indicatorScoreNumber"><strong>{score?.score===null||score===undefined?'—':score.score+'/100'}</strong><span>{score?.grade||'Insufficient data'}</span></div>
+   <div className="indicatorScoreNumber"><strong>{score?.score==null?'—':score.score+'/100'}</strong><span>{score?.grade||'Insufficient data'}</span></div>
    <div className="indicatorScoreText"><b>Research-only A+ setup score</b><p>Uncalibrated checklist, NOT win probability or a confirmed CALL/PUT entry.</p><span>{score?.direction||'NEUTRAL'} context</span></div>
   </div>
   <div className="indicatorMetrics">

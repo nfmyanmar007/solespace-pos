@@ -10,7 +10,20 @@ export function marketState(now=new Date()){const wd=new Intl.DateTimeFormat('en
 export function evaluate(ticker:Ticker,bars:Bar[],now=new Date()):Signal{
  const blank:Signal={ticker,status:'WAIT',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:'Awaiting regular-session candles',timestamp:null,fresh:false,feed:'IEX'};
  const today=et(now.toISOString()).day;
- const arr=bars.filter(b=>{const v=et(b.t);return v.day===today&&v.min>=570&&v.min<960&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&b.v>0&&b.h>=b.l}).sort((a,b)=>a.t.localeCompare(b.t));
+ const valid=bars.filter(b=>{const v=et(b.t);return v.day===today&&v.min>=240&&v.min<960&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&b.v>0&&b.h>=b.l}).sort((a,b)=>a.t.localeCompare(b.t));
+ const session=marketState(now),clock=et(now.toISOString()).min;
+ // Prior to the opening bell, show only *provisional* extended-hours levels.
+ // IEX premarket is sparse: absence of bars must never be presented as an actionable signal.
+ if(session==='PRE-MARKET'){
+   const pre=valid.filter(b=>et(b.t).min<570 && new Date(b.t).getTime()+60000<=now.getTime());
+   if(clock<240)return {...blank,status:'PRE-MARKET',reason:'IEX premarket session has not started (4:00 AM ET)'};
+   if(!pre.length)return {...blank,status:'NO PREMARKET DATA',reason:'No completed IEX premarket bars available yet; IEX covers only a small fraction of US trades'};
+   const last=pre[pre.length-1],age=now.getTime()-(new Date(last.t).getTime()+60000),fresh=age>=0&&age<=300000;
+   const volume=pre.reduce((s,b)=>s+b.v,0),vwap=round(pre.reduce((s,b)=>s+(b.h+b.l+b.c)/3*b.v,0)/volume);
+   const hi=round(Math.max(...pre.map(b=>b.h))),lo=round(Math.min(...pre.map(b=>b.l)));
+   return {...blank,status:fresh?'PRELIMINARY':'PREMARKET STALE',callAbove:hi,putBelow:lo,price:round(last.c),vwap,bias:last.c>vwap?'BULLISH':last.c<vwap?'BEARISH':'NEUTRAL',timestamp:last.t,fresh,reason:fresh?'Provisional 4:00 AM–now IEX high/low; opening bell replaces these levels. Not a confirmed entry.':'IEX premarket prices are old or thinly traded; levels are not actionable.'};
+ }
+ const arr=valid.filter(b=>et(b.t).min>=570);
  if(!arr.length)return blank;
  const last=arr[arr.length-1],age=now.getTime()-new Date(last.t).getTime();
  const fresh=age>=60000&&age<=240000; // minute candle must be finished and no more than four minutes old
@@ -40,7 +53,7 @@ export async function loadBars(ticker:Ticker):Promise<Bar[]>{
  const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',timeZoneName:'short'}).formatToParts(new Date());
  const get=(k:string)=>p.find(x=>x.type===k)?.value||'';
  const day=get('year')+'-'+get('month')+'-'+get('day'),offset=get('timeZoneName')==='EST'?'-05:00':'-04:00';
- const start=new Date(day+'T09:30:00'+offset),end=new Date(Math.min(Date.now()-60000,new Date(day+'T16:00:00'+offset).getTime()));
+ const start=new Date(day+'T04:00:00'+offset),end=new Date(Math.min(Date.now()-60000,new Date(day+'T16:00:00'+offset).getTime()));
  if(start>=end)return [];
  const url=new URL('https://data.alpaca.markets/v2/stocks/'+ticker+'/bars');
  for(const [k,v] of Object.entries({feed:'iex',timeframe:'1Min',start:start.toISOString(),end:end.toISOString(),limit:'1000',adjustment:'raw'}))url.searchParams.set(k,v);

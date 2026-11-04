@@ -65,3 +65,13 @@ test('bad market calendar data is rejected',()=>{
  assert.throws(()=>resolveSession('2026-11-04',{calendar:'bad'}));
  assert.throws(()=>resolveSession('2026-11-04',[{date:'2026-11-04',open:'09:30',close:'garbage'}]));
 });
+
+test('invalid timestamps are ignored without crashing the ticker scan',()=>{
+ const rows=bars();rows.push({...rows.at(-1),t:'not-a-date'});
+ const s=evaluate('QQQ',rows,at('2026-11-04T10:05:20-05:00'),session);
+ assert.equal(s.status,'CONFIRMED CALL');
+});
+test('completed bearish breakdown with volume can confirm PUT',()=>{
+ const s=evaluate('QQQ',bars({pattern:'bear'}),at('2026-11-04T10:05:20-05:00'),session);
+ assert.equal(s.status,'CONFIRMED PUT');
+});

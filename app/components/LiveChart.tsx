@@ -1,15 +1,19 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
+import IndicatorPanel from './IndicatorPanel';
+import type {IndicatorRow,ResearchScore} from '@/lib/indicators';
 type Interval='1m'|'5m';
 type Candle={time:string;open:number;high:number;low:number;close:number;volume:number;vwap:number};
 type Marker={time:string;direction:'CALL'|'PUT';price:number};
-type Data={ticker:string;interval:Interval;asOf:string;lastBarTime:string|null;feed:string;stale:boolean;callAbove:number|null;putBelow:number|null;bars:Candle[];markers:Marker[];warning:string};
+type Data={ticker:string;interval:Interval;asOf:string;lastBarTime:string|null;feed:string;stale:boolean;callAbove:number|null;putBelow:number|null;bars:Candle[];markers:Marker[];warning:string;indicators?:IndicatorRow[];researchScore?:ResearchScore};
 const money=(n:number)=>'$'+n.toFixed(2);
 const time=(s:string)=>new Date(s).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'});
 const H=340,top=20,priceBottom=240,volumeTop=267,volumeBottom=308;
 export default function LiveChart({ticker}:{ticker:string}){
  const [interval,setInterval]=useState<Interval>('1m');
  const [windowSize,setWindowSize]=useState(30);
+ const [showEma,setShowEma]=useState(true);
+ const [showBands,setShowBands]=useState(false);
  const [isMobile,setIsMobile]=useState(false);
  useEffect(()=>{const media=window.matchMedia('(max-width:700px)');const sync=()=>setIsMobile(media.matches);sync();media.addEventListener('change',sync);return ()=>media.removeEventListener('change',sync);},[]);
  const [data,setData]=useState<Data|null>(null);
@@ -35,7 +39,14 @@ export default function LiveChart({ticker}:{ticker:string}){
  const W=isMobile?420:900;
  const padLeft=isMobile?42:65,padRight=isMobile?52:70;
  // Trigger lines outside recent trading range must NOT flatten the candles.
- const values=visible.flatMap(b=>[b.low,b.high,b.vwap]);
+ const indicatorSlice=(data?.indicators||[]).slice(-windowSize);
+ const values=visible.flatMap((b,i)=>{
+  const ind=indicatorSlice[i];
+  const extra:number[]=[];
+  if(showEma){if(ind?.ema9!==null&&ind?.ema9!==undefined)extra.push(ind.ema9);if(ind?.ema21!==null&&ind?.ema21!==undefined)extra.push(ind.ema21);}
+  if(showBands){if(ind?.bbLower!==null&&ind?.bbLower!==undefined)extra.push(ind.bbLower);if(ind?.bbUpper!==null&&ind?.bbUpper!==undefined)extra.push(ind.bbUpper);}
+  return [b.low,b.high,b.vwap,...extra];
+ });
  const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
  const buffer=Math.max((max-min)*.1,max*.0005,.01);
  const low=min-buffer,high=max+buffer;
@@ -51,6 +62,11 @@ export default function LiveChart({ticker}:{ticker:string}){
   const expected=interval==='1m'?60000:300000;
   return (previous&&Date.parse(b.time)-Date.parse(previous.time)===expected?'L':'M')+x(i).toFixed(1)+' '+y(b.vwap).toFixed(1);
  }).join(' ');
+ const overlayPath=(key:'ema9'|'ema21'|'bbUpper'|'bbLower')=>indicatorSlice.map((b,i)=>{
+  const v=b?.[key],prev=indicatorSlice[i-1],expected=interval==='1m'?60000:300000;
+  if(v==null)return '';
+  return (i>0&&prev?.[key]!=null&&Date.parse(b.time)-Date.parse(prev.time)===expected?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);
+ }).filter(Boolean).join(' ');
  const active=visible[selected==null?Math.max(0,visible.length-1):Math.min(selected,visible.length-1)];
  return <section className="panel chartPanel" aria-label="Live intraday candlestick chart">
   <div className="paneltop chartTop"><div><h2>{ticker} · Intraday Candles</h2><p className="muted">Alpaca IEX · Completed regular-session bars only · Display refreshes every 60 seconds</p></div>
@@ -63,6 +79,10 @@ export default function LiveChart({ticker}:{ticker:string}){
   <div className="chartLevels" aria-label="Opening-range trigger levels">
    <span className="chartLevel positive">CALL ABOVE <strong>{data?.callAbove==null?'—':money(data.callAbove)}</strong></span>
    <span className="chartLevel negative">PUT BELOW <strong>{data?.putBelow==null?'—':money(data.putBelow)}</strong></span>
+  </div>
+  <div className="chartOverlayToggles" aria-label="Technical overlays">
+   <button type="button" aria-pressed={showEma} className={showEma?'isActive':''} onClick={()=>setShowEma(v=>!v)}>EMA 9/21 {showEma?'ON':'OFF'}</button>
+   <button type="button" aria-pressed={showBands} className={showBands?'isActive':''} onClick={()=>setShowBands(v=>!v)}>Bollinger {showBands?'ON':'OFF'}</button>
   </div>
   <div className="chartInfo">
    <span className="chartKey"><i style={{background:'#49d9ad'}}/> Up candle</span>
@@ -87,6 +107,8 @@ export default function LiveChart({ticker}:{ticker:string}){
       <rect x={x(i)-step/2} y={top} width={step} height={volumeBottom-top} fill="transparent" onMouseEnter={()=>setSelected(i)} onClick={()=>setSelected(i)} />
      </g>})}
     <path d={vwapPath} fill="none" stroke="#eac76b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+    {showEma&&<g><path d={overlayPath('ema9')} fill="none" stroke="#66b7ff" strokeWidth="1.6"/><path d={overlayPath('ema21')} fill="none" stroke="#be98fc" strokeWidth="1.6"/></g>}
+    {showBands&&<g><path d={overlayPath('bbUpper')} fill="none" stroke="#9baec9" strokeDasharray="4 3" strokeWidth="1.3"/><path d={overlayPath('bbLower')} fill="none" stroke="#9baec9" strokeDasharray="4 3" strokeWidth="1.3"/></g>}
     {data?.markers.map((m,j)=>{
      const ms=Date.parse(m.time),length=interval==='1m'?60000:300000;
      const index=visible.findIndex((b,i)=>{const bt=Date.parse(b.time);return ms>=bt&&ms<bt+length;});
@@ -108,5 +130,6 @@ export default function LiveChart({ticker}:{ticker:string}){
    <span>{data?.stale?'⚠ Stale chart data':'IEX-only feed'} · Last completed candle: {data?.lastBarTime?time(data.lastBarTime)+' ET':'—'}</span>
    <span>{data?.markers.length||0} recorded signal markers · {data?.warning||'Not a live options quote'}</span>
   </div>
+  <IndicatorPanel rows={data?.indicators||[]} score={data?.researchScore||null} interval={interval} stale={data?.stale??true}/>
  </section>;
 }

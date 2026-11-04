@@ -1,74 +1,32 @@
-# Apology Message Page
+# OptionTrigger Pro — signals-only prototype
 
-A quiet, mobile-first apology page with optional anonymous visit receipt.
+This repository **replaces the old solespace-pos application**. A snapshot of the previous main branch is preserved at `backup-before-optiontrigger-2026-11-04`.
 
-## Personalize
+## Features
+- Responsive dashboard covering QQQ, SPY, TSLA, NVDA, AMD, AAPL, MSFT and GOOGL.
+- Opening range (9:30–9:35 ET), two consecutive completed 1m candles, VWAP, prior-5m direction and relative volume checks.
+- Statuses WAIT, READY, CONFIRMED CALL, CONFIRMED PUT, STALE and NO TRADE.
+- Alpaca Basic real-time **IEX-only** stock bars. This is not a consolidated quote feed or an options bid/ask feed.
+- Public API GET /api/triggers; authorized POST /api/scan for persisting results to Supabase.
+- Without data keys the UI shows illustrative DEMO mode only. **Never trade based on DEMO**.
 
-Edit the top of `script.js`:
-
-```js
-const config = {
-  herName: "Her Name",
-  myName: "My Name",
-  linkId: "apology-01",
-  enableAnonymousVisitReceipt: true
-};
+## Run locally
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
 ```
+Open http://localhost:3000.
 
-Use a `linkId` that does not contain her name or personal information.
+## Enable live IEX equity candles
+Set `ALPACA_API_KEY` and `ALPACA_API_SECRET` in `.env.local` and Vercel environment settings; redeploy. Keys must remain **server-side only**. The app does not fetch options contracts or submit orders.
 
-## Privacy
+## Database and scheduled scanner
+1. Create a *separate* Supabase project, apply `db/schema.sql` in its SQL Editor.
+2. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a random `SCAN_SECRET` of 32+ characters in Vercel settings.
+3. For periodic scans, configure a trusted external scheduler to POST `https://YOUR-APP.vercel.app/api/scan` with `Authorization: Bearer YOUR_SCAN_SECRET`. The free Vercel plan alone cannot execute frequent minute-by-minute cron.
+4. Do not use the old Supabase project or environment secrets from solespace-pos; its old app has been replaced.
+5. Push notifications, market holidays, backtests, options-chain quotes and durable deduplication across successive confirmation bars are **not yet production-ready**.
 
-When tracking is enabled, the application code stores only:
-
-- `link_id`
-- `event_type` (`page_opened` or `message_revealed`)
-- server timestamp
-
-The application code does not intentionally store IP address, location, browser/device details, contacts, camera/microphone data, or form answers.
-
-The page visibly discloses that an anonymous open/reveal receipt may be recorded.
-
-## Vercel + Supabase tracking setup
-
-1. Create a Supabase project, or use an existing project.
-2. Run `supabase-setup.sql` in Supabase SQL Editor.
-3. Deploy this folder to Vercel.
-4. In Vercel → Project → Settings → Environment Variables, add:
-
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `STATUS_SECRET`
-
-5. Redeploy after adding environment variables.
-
-Important: `SUPABASE_SERVICE_ROLE_KEY` is server-side only. Never put it in `script.js`.
-
-## Check whether the link was opened
-
-Visit:
-
-`https://YOUR-DOMAIN.vercel.app/status.html`
-
-Enter:
-
-- the same `linkId` from `script.js`
-- your `STATUS_SECRET`
-
-It will show whether:
-- the page was opened
-- the "Read my message" button was pressed
-
-## No tracking option
-
-Set:
-
-```js
-enableAnonymousVisitReceipt: false
-```
-
-The apology page will still work normally.
-
-## Static hosting
-
-The message page works on GitHub Pages or Netlify as a static site, but the supplied tracking API is designed for Vercel serverless functions. Without the API/environment setup, tracking fails silently and the message page continues to work.
+## Trading limitations
+Opening range and VWAP are based on the subset of trades in the IEX feed. Missing 1m candles and market-wide holiday closures can affect signals. Signal status is not a broker-executable price; no profit performance has been validated. Manual verification and paper testing are required before any real-money use.

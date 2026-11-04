@@ -12,7 +12,7 @@ function bars({skip=null,pattern='bull',bad=false}={}){
   const minutes=30+i, hh=Math.floor((9*60+minutes)/60),mm=(9*60+minutes)%60;
   const ts=`2026-11-04T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00-05:00`;
   const isOpen=i<5;
-  const c=isOpen?100:pattern==='bull'?101.5+i*.06:98.5-i*.06;
+  const c=isOpen?100:pattern==='bull'?100.25+i*.012:99.75-i*.012;
   const v=i===34?2000:1000;
   rows.push({t:new Date(ts).toISOString(),o:c,h:c+.15,l:c-.15,c,v});
  }

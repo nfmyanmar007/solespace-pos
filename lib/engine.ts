@@ -1,4 +1,5 @@
 // Research-only signals. IEX stock feed != consolidated market or options quotes.
+import {sessionState,type SessionWindow} from './market-calendar.ts';
 export const tickers=['QQQ','SPY','TSLA','NVDA','AMD','AAPL','MSFT','GOOGL'] as const;
 export type Ticker=typeof tickers[number];
 export type Bar={t:string;o:number;h:number;l:number;c:number;v:number};
@@ -7,11 +8,13 @@ const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'num
 function et(ts:string){const p=fmt.formatToParts(new Date(ts));const g=(k:string)=>p.find(x=>x.type===k)?.value||'';return {day:g('year')+'-'+g('month')+'-'+g('day'),min:+g('hour')*60 + +g('minute')}}
 const round=(x:number)=>Math.round(x*100)/100;
 export function marketState(now=new Date()){const wd=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short'}).format(now);const m=et(now.toISOString()).min;if(wd==='Sat'||wd==='Sun')return 'MARKET CLOSED';if(m<570)return 'PRE-MARKET';if(m>=960)return 'AFTER HOURS';return 'REGULAR SESSION'}
-export function evaluate(ticker:Ticker,bars:Bar[],now=new Date()):Signal{
+export function evaluate(ticker:Ticker,bars:Bar[],now=new Date(),calendar?:SessionWindow|null):Signal{
  const blank:Signal={ticker,status:'WAIT',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:'Awaiting regular-session candles',timestamp:null,fresh:false,feed:'IEX'};
  const today=et(now.toISOString()).day;
- const valid=bars.filter(b=>{const v=et(b.t);return v.day===today&&v.min>=240&&v.min<960&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&b.v>0&&b.h>=b.l}).sort((a,b)=>a.t.localeCompare(b.t));
- const session=marketState(now),clock=et(now.toISOString()).min;
+ const valid=bars.filter(b=>{const v=et(b.t);const t=new Date(b.t).getTime();return v.day===today&&v.min>=240&&v.min<960&&Number.isFinite(t)&&t+60000<=now.getTime()&&[b.o,b.h,b.l,b.c,b.v].every(Number.isFinite)&&Number.isInteger(b.v)&&b.v>0&&b.l>0&&b.h>=Math.max(b.o,b.c,b.l)&&b.l<=Math.min(b.o,b.c)}).sort((a,b)=>a.t.localeCompare(b.t));
+ const session=calendar===undefined?marketState(now):sessionState(now,calendar),clock=et(now.toISOString()).min;
+ if(session==='CALENDAR UNAVAILABLE')return {...blank,status:'NO TRADE',reason:'Exchange calendar unavailable; fail closed'};
+ if(session==='MARKET CLOSED')return {...blank,status:'NO TRADE',reason:'Exchange holiday or non-trading day'};
  // Prior to the opening bell, show only *provisional* extended-hours levels.
  // IEX premarket is sparse: absence of bars must never be presented as an actionable signal.
  if(session==='PRE-MARKET'){
@@ -26,7 +29,7 @@ export function evaluate(ticker:Ticker,bars:Bar[],now=new Date()):Signal{
  const arr=valid.filter(b=>et(b.t).min>=570);
  if(!arr.length)return blank;
  const last=arr[arr.length-1],age=now.getTime()-new Date(last.t).getTime();
- const fresh=age>=60000&&age<=240000; // minute candle must be finished and no more than four minutes old
+ const fresh=age>=60000&&age<=180000; // completed 1m candle no older than 3m
  const total=arr.reduce((s,b)=>s+b.v,0),vwap=round(arr.reduce((s,b)=>s+((b.h+b.l+b.c)/3)*b.v,0)/total);
  const prev=arr.slice(-21,-1),avg=prev.length?prev.reduce((s,b)=>s+b.v,0)/prev.length:0,ratio=avg?round(last.v/avg):null;
  const first=arr.filter(b=>{const m=et(b.t).min;return m>=570&&m<575;});
@@ -34,7 +37,7 @@ export function evaluate(ticker:Ticker,bars:Bar[],now=new Date()):Signal{
  if(first.length!==5 || [570,571,572,573,574].some(m=>!first.some(b=>et(b.t).min===m)))return {...common,status:'NO TRADE',reason:'Incomplete 9:30–9:35 ET opening range'};
  const callAbove=round(Math.max(...first.map(b=>b.h))),putBelow=round(Math.min(...first.map(b=>b.l)));
  const result={...common,callAbove,putBelow};
- if(marketState(now)!=='REGULAR SESSION')return {...result,status:'STALE',reason:'Market closed; confirmation disabled'};
+ if(session!=='REGULAR SESSION')return {...result,status:'STALE',reason:'Market closed; confirmation disabled'};
  if(!fresh)return {...result,status:'STALE',reason:'Incomplete or stale last candle'};
  if(et(now.toISOString()).min<577)return {...result,status:'WAIT',reason:'Opening period / confirmation guard'};
  if(last.c>callAbove*1.008||last.c<putBelow*.992)return {...result,status:'STALE',reason:'Price extended more than 0.8% past trigger'};

@@ -1,0 +1,29 @@
+name: Phase 1 reliability tests
+on:
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'tests/**'
+      - 'app/api/**'
+      - 'tsconfig.json'
+      - 'package.json'
+      - '.github/workflows/phase1-ci.yml'
+  push:
+    branches: [feat/v2-phase1-reliability]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Run reliability unit tests
+        run: node --experimental-strip-types --test tests/*.test.mjs

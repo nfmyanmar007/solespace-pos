@@ -2,6 +2,8 @@ import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
 import {loadBars,tickers,type Ticker} from '@/lib/engine';
 import {buildChart,type ChartInterval,type ChartMarker} from '@/lib/chart-data';
+import {calculateIndicators,scoreSetup} from '@/lib/indicators';
+import {loadHistoricalVolume} from '@/lib/historical-volume';
 export const dynamic='force-dynamic';
 export const maxDuration=30;
 // Read-only historical/current intraday candles; no orders and no client API secrets.
@@ -15,9 +17,11 @@ export async function GET(req:NextRequest){
  try{
   const ticker=symbol as Ticker;
   const now=new Date();
-  const [source,markers]=await Promise.all([loadBars(ticker),readRecordedSignals(ticker,now)]);
+  const [source,markers,volumeHistory]=await Promise.all([loadBars(ticker),readRecordedSignals(ticker,now),loadHistoricalVolume(ticker,now)]);
   const chart=buildChart(ticker,source,now,rawInterval as ChartInterval,markers);
-  return NextResponse.json(chart,{headers:{'Cache-Control':'no-store, max-age=0'}});
+  const indicators=calculateIndicators(chart.bars,rawInterval==='1m'?1:5,volumeHistory);
+  const researchScore=scoreSetup(chart.bars,indicators,chart.stale);
+  return NextResponse.json({...chart,indicators,researchScore,indicatorContext:{source:'IEX EQUITIES',rvolHistoryAvailable:volumeHistory.length>0,disclaimer:'Research-only, not an option entry or a probability of profit'}},{headers:{'Cache-Control':'no-store, max-age=0'}});
  }catch{
   return NextResponse.json({error:'Chart feed unavailable; retry later'},{status:503,headers:{'Cache-Control':'no-store'}});
  }

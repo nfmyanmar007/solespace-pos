@@ -23,6 +23,12 @@ export async function POST(req:NextRequest){
  const {error:logError}=await db.from('scan_runs').insert({mode:report.mode,market_state:report.marketState,signal_count:report.signals.length,report});
  if(logError)return NextResponse.json({error:'Database missing scan_runs; apply db/schema.sql'},{status:503});
  const day=nyDay(now);
+ // This table is populated after db/v2-phase1-delivery-events.sql is applied.
+ // Audit problems never trigger duplicate Telegram attempts.
+ const audit=async(alertId:number,ticker:string,direction:'CALL'|'PUT',eventType:string,detail:string|null=null)=>{
+  const {error}=await db.from('alert_delivery_events').insert({alert_id:alertId,ticker,direction,event_type:eventType,detail});
+  if(error)console.error('Delivery audit insertion failed',error.code);
+ };
  let sent=0,duplicate=0,failed=0;
  for(const s of confirmed){
   const direction=s.status==='CONFIRMED CALL'?'CALL':'PUT';
@@ -34,19 +40,24 @@ export async function POST(req:NextRequest){
   if(claimed.error?.code==='23505'){duplicate++;continue;}
   if(claimed.error)return NextResponse.json({error:'Database missing signal_alerts; apply db/alerts-migration.sql',detail:claimed.error.message},{status:503});
   const id=claimed.data.id as number;
+  await audit(id,s.ticker,direction,'claimed');
   const signalRow={session_date:day,ticker:s.ticker,direction,bar_timestamp:s.timestamp,observed_price:s.price,
     trigger_price:direction==='CALL'?s.callAbove:s.putBelow,vwap:s.vwap,volume_ratio:s.volumeRatio,reason:s.reason,feed:s.feed};
   // Journal is separate from delivery; journal failures do not generate repeat Telegram messages.
-  await db.from('signal_events').upsert(signalRow,{onConflict:'session_date,ticker,direction,bar_timestamp',ignoreDuplicates:true});
+  const journal=await db.from('signal_events').upsert(signalRow,{onConflict:'session_date,ticker,direction,bar_timestamp',ignoreDuplicates:true});
+  if(journal.error)await audit(id,s.ticker,direction,'journal_failed',journal.error.code);
   try{
-   await sendTelegram(formatAlert({ticker:s.ticker,direction,observed:s.price!,trigger:direction==='CALL'?s.callAbove!:s.putBelow!,
+   const messageId=await sendTelegram(formatAlert({ticker:s.ticker,direction,observed:s.price!,trigger:direction==='CALL'?s.callAbove!:s.putBelow!,
      vwap:s.vwap,volumeRatio:s.volumeRatio,barTimestamp:s.timestamp!,reason:s.reason,feed:s.feed}));
    const {error}=await db.from('signal_alerts').update({status:'sent',sent_at:new Date().toISOString(),error_message:null}).eq('id',id);
-   if(error)throw new Error('Message sent but database acknowledgment failed');
+   if(error)throw new Error('Message accepted but database acknowledgment failed: delivery uncertain');
+   await audit(id,s.ticker,direction,'sent',messageId==null?'Telegram accepted message':'Telegram message id '+messageId);
    sent++;
   }catch(error){
    failed++;
-   await db.from('signal_alerts').update({status:'failed',error_message:String(error).slice(0,300)}).eq('id',id);
+   const message=error instanceof Error?error.message:'Unknown delivery failure';
+   await db.from('signal_alerts').update({status:'failed',error_message:message.slice(0,300)}).eq('id',id);
+   await audit(id,s.ticker,direction,'failed',message.slice(0,240));
   }
  }
  return NextResponse.json({ok:failed===0,asOf:report.asOf,eligible:confirmed.length,sent,duplicate,failed,

@@ -12,6 +12,8 @@ export async function POST(req:NextRequest){
   await sendTelegram('✅ OptionTrigger Pro test notification\nYour Telegram connection is working.\nThis is only a delivery test — not a trading signal.');
   return NextResponse.json({ok:true,message:'Test Telegram message accepted by Telegram'});
  }catch(err){
-  return NextResponse.json({ok:false,error:'Telegram delivery failed; inspect server configuration'},{status:502});
+  const message=err instanceof Error?err.message:'Unknown delivery error';
+  const safe=message.startsWith('Telegram failed (')?message:'Server-side delivery configuration error';
+  return NextResponse.json({ok:false,error:safe},{status:502});
  }
 }

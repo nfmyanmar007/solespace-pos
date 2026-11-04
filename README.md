@@ -4,7 +4,7 @@ This repository **replaces the old solespace-pos application**. A snapshot of th
 
 ## Features
 - Responsive dashboard covering QQQ, SPY, TSLA, NVDA, AMD, AAPL, MSFT and GOOGL.
-- Opening range (9:30–9:35 ET), two consecutive completed 1m candles, VWAP, prior-5m direction and relative volume checks.
+- Premarket provisional price/high/low from available 4:00–9:29 ET IEX bars (no trading confirmation), and opening range (9:30–9:35 ET), two consecutive completed 1m candles, VWAP, prior-5m direction and relative volume checks.
 - Statuses WAIT, READY, CONFIRMED CALL, CONFIRMED PUT, STALE and NO TRADE.
 - Alpaca Basic real-time **IEX-only** stock bars. This is not a consolidated quote feed or an options bid/ask feed.
 - Public API GET /api/triggers; authorized POST /api/scan for persisting results to Supabase.
@@ -30,3 +30,8 @@ Set `ALPACA_API_KEY` and `ALPACA_API_SECRET` in `.env.local` and Vercel environm
 
 ## Trading limitations
 Opening range and VWAP are based on the subset of trades in the IEX feed. Missing 1m candles and market-wide holiday closures can affect signals. Signal status is not a broker-executable price; no profit performance has been validated. Manual verification and paper testing are required before any real-money use.
+
+## Premarket behavior
+- 4:00–9:29 ET: use only completed IEX 1-minute candles to calculate preliminary high and low and VWAP; stale or missing IEX prints are prominently flagged.
+- 9:30–9:35 ET: provisional levels are retired; regular session waits for opening-range completion.
+- IEX premarket candles may be absent for some symbols, even while other exchanges trade actively. No synthetic prices or guaranteed real-time prices are displayed.

@@ -2,21 +2,54 @@ import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
 import {timingSafeEqual,createHash} from 'node:crypto';
 import {getReport} from '@/lib/report';
+import {sendTelegram,formatAlert} from '@/lib/telegram';
 export const dynamic='force-dynamic';
-const eq=(a:string,b:string)=>timingSafeEqual(createHash('sha256').update(a).digest(),createHash('sha256').update(b).digest());
+export const maxDuration=60;
+const safeEq=(a:string,b:string)=>timingSafeEqual(createHash('sha256').update(a).digest(),createHash('sha256').update(b).digest());
+const nyDay=(date:Date)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 export async function POST(req:NextRequest){
  const secret=process.env.SCAN_SECRET;
- if(!secret||secret.length<32||!eq(req.headers.get('authorization')||'','Bearer '+secret))return NextResponse.json({error:'Unauthorized'},{status:401});
- if(!process.env.ALPACA_API_KEY||!process.env.ALPACA_API_SECRET||!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)return NextResponse.json({error:'Live data or Supabase not configured'},{status:503});
- const report=await getReport(),db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
- const {error}=await db.from('scan_runs').insert({mode:report.mode,market_state:report.marketState,signal_count:report.signals.length,report});
- if(error)return NextResponse.json({error:'Scan storage failed'},{status:500});
- const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
- const signals=report.signals.filter(s=>s.status.startsWith('CONFIRMED '));
- if(signals.length){
-  const rows=signals.map(s=>({session_date:day,ticker:s.ticker,direction:s.status==='CONFIRMED CALL'?'CALL':'PUT',bar_timestamp:s.timestamp,observed_price:s.price,trigger_price:s.status==='CONFIRMED CALL'?s.callAbove:s.putBelow,vwap:s.vwap,volume_ratio:s.volumeRatio,reason:s.reason,feed:s.feed}));
-  const {error:e}=await db.from('signal_events').upsert(rows,{onConflict:'session_date,ticker,direction,bar_timestamp',ignoreDuplicates:true});
-  if(e)return NextResponse.json({error:'Signal storage failed'},{status:500});
+ if(!secret||secret.length<32||!safeEq(req.headers.get('authorization')||'','Bearer '+secret))
+  return NextResponse.json({error:'Unauthorized'},{status:401});
+ if(!process.env.ALPACA_API_KEY||!process.env.ALPACA_API_SECRET||!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY||!process.env.TELEGRAM_BOT_TOKEN||!process.env.TELEGRAM_CHAT_ID)
+  return NextResponse.json({error:'Configure Alpaca, Supabase, and Telegram environment variables before enabling alerts'},{status:503});
+ const report=await getReport(),now=new Date();
+ const db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+ // Only confirmed, fresh, same-session records are candidates. Never alert on demo or premarket levels.
+ const confirmed=report.mode==='IEX LIVE'&&report.marketState==='REGULAR SESSION'
+   ?report.signals.filter(s=>s.fresh&&s.timestamp&&s.status.startsWith('CONFIRMED ')&&
+       new Date(s.timestamp).getTime()<=now.getTime()&&now.getTime()-new Date(s.timestamp).getTime()<5*60000)
+   :[];
+ const {error:logError}=await db.from('scan_runs').insert({mode:report.mode,market_state:report.marketState,signal_count:report.signals.length,report});
+ if(logError)return NextResponse.json({error:'Database missing scan_runs; apply db/schema.sql'},{status:503});
+ const day=nyDay(now);
+ let sent=0,duplicate=0,failed=0;
+ for(const s of confirmed){
+  const direction=s.status==='CONFIRMED CALL'?'CALL':'PUT';
+  const row={session_date:day,ticker:s.ticker,direction,bar_timestamp:s.timestamp,
+    price:s.price,trigger_price:direction==='CALL'?s.callAbove:s.putBelow,status:'pending'};
+  // Unique (day, ticker, direction) makes a scanner retry nonduplicating.
+  // Claim BEFORE sending to prevent parallel requests from sending the same signal twice.
+  const claimed=await db.from('signal_alerts').insert(row).select('id').single();
+  if(claimed.error?.code==='23505'){duplicate++;continue;}
+  if(claimed.error)return NextResponse.json({error:'Database missing signal_alerts; apply db/alerts-migration.sql',detail:claimed.error.message},{status:503});
+  const id=claimed.data.id as number;
+  const signalRow={session_date:day,ticker:s.ticker,direction,bar_timestamp:s.timestamp,observed_price:s.price,
+    trigger_price:direction==='CALL'?s.callAbove:s.putBelow,vwap:s.vwap,volume_ratio:s.volumeRatio,reason:s.reason,feed:s.feed};
+  // Journal is separate from delivery; journal failures do not generate repeat Telegram messages.
+  await db.from('signal_events').upsert(signalRow,{onConflict:'session_date,ticker,direction,bar_timestamp',ignoreDuplicates:true});
+  try{
+   await sendTelegram(formatAlert({ticker:s.ticker,direction,observed:s.price!,trigger:direction==='CALL'?s.callAbove!:s.putBelow!,
+     vwap:s.vwap,volumeRatio:s.volumeRatio,barTimestamp:s.timestamp!,reason:s.reason,feed:s.feed}));
+   const {error}=await db.from('signal_alerts').update({status:'sent',sent_at:new Date().toISOString(),error_message:null}).eq('id',id);
+   if(error)throw new Error('Message sent but database acknowledgment failed');
+   sent++;
+  }catch(error){
+   failed++;
+   await db.from('signal_alerts').update({status:'failed',error_message:String(error).slice(0,300)}).eq('id',id);
+  }
  }
- return NextResponse.json({ok:true,asOf:report.asOf,confirmed:signals.length,notice:'No push delivery in MVP'});
+ return NextResponse.json({ok:failed===0,asOf:report.asOf,eligible:confirmed.length,sent,duplicate,failed,
+  note: 'At most one alert per ticker/direction/day; a failed delivery is logged and requires manual intervention.'},
+  {status:failed?502:200});
 }

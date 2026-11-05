@@ -191,3 +191,22 @@
  .panel .watchManager{margin:10px 9px 12px}
  .mobileStockScope{font-size:9px}
 }
+
+
+/* V2.5 dashboard navigation: independent views instead of one endless page */
+.dashboardTabs{display:flex;align-items:stretch;gap:7px;padding:6px;margin:16px 0 18px;border:1px solid #2f3e52;border-radius:13px;background:#111c2a;overflow-x:auto;scrollbar-width:thin}
+.dashboardTab{flex:1;display:flex;justify-content:center;align-items:center;gap:8px;white-space:nowrap;background:transparent;border:1px solid transparent;border-radius:9px;padding:13px 12px;color:#aabbd0;font-size:12px;font-weight:750;min-height:44px}
+.dashboardTab:hover,.dashboardTab.active{background:#1f403e;border-color:#32715e;color:#84eac5}
+.dashboardTab:focus-visible,.dashboardSideTab:focus-visible{outline:2px solid #8fe8ce;outline-offset:2px}
+.dashboardTabIcon{font-size:16px}
+.dashboardTabContent{min-height:340px}
+.dashboardSideTab{cursor:pointer;width:100%;text-align:left;border:0;font:inherit}
+.dashboardSideTab:not(.selected){background:transparent}
+.chartSectionHeading{background:#111c2a;border:1px solid #2d3e53;border-radius:10px;margin-bottom:12px}
+@media(max-width:700px){
+ .dashboardTabs{gap:3px;margin:11px 0 15px;padding:4px;position:sticky;top:0;z-index:15;background:#111c2a}
+ .dashboardTab{flex:1;gap:4px;min-width:0;padding:12px 4px;font-size:11px;flex-direction:column}
+ .dashboardTabIcon{font-size:18px}
+ .dashboardTabContent{min-height:250px}
+ .chartSectionHeading{padding:12px}
+}

@@ -18,7 +18,7 @@ export function sessionGapSummary(now:Date,runs:RunTime[],session:SessionWindow|
  }else if(started)check(elapsed);
  const last=valid.at(-1)?.created_at||null;
  // A current outage should be reported even if the previous 2-minute scans were regular.
- const stale=started&&elapsed>300&&(!last||now.getTime()-Date.parse(last)>300000);
+ const stale=started&&minute<session.closeMinute&&elapsed>300&&(!last||now.getTime()-Date.parse(last)>300000);
  return {verifiable:true,gaps,longestSeconds,regularRuns:valid.length,lastRegularAt:last,stale};
 }
 export type AlertRow={ticker:string;direction:string;status:string;created_at:string;error_message?:string|null};

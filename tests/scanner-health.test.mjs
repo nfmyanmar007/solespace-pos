@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {classifyScannerHealth,summarizeDeliveryStatus} from '../lib/scanner-health.ts';
 const now=new Date('2026-11-05T15:00:00Z'); // Thursday 10:00 Eastern
-const run=(secondsAgo:number)=>({created_at:new Date(now.getTime()-secondsAgo*1000).toISOString(),mode:'IEX LIVE',market_state:'REGULAR SESSION',signal_count:8});
+const run=(secondsAgo)=>({created_at:new Date(now.getTime()-secondsAgo*1000).toISOString(),mode:'IEX LIVE',market_state:'REGULAR SESSION',signal_count:8});
 test('recent two-minute scanner records are healthy during regular hours',()=>{
  const h=classifyScannerHealth(now,[run(60),run(180),run(300)],'REGULAR SESSION');
  assert.equal(h.state,'HEALTHY');assert.equal(h.missedWindows,0);assert.equal(h.recentRuns,3);

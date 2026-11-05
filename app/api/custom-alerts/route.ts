@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
-import {isOwnerRequest,isSameOrigin} from '@/lib/custom-alert-admin';
+import {isSameOrigin} from '@/lib/custom-alert-admin';
+import {ownerAuthenticated} from '@/lib/owner-security';
 import {validateCustomAlertTicker,MAX_CUSTOM_ALERTS} from '@/lib/custom-alerts';
 import {validateWatchSymbol} from '@/lib/asset-validator';
 export const dynamic='force-dynamic';
@@ -11,7 +12,7 @@ function db(){
  return createClient(url,key,{auth:{persistSession:false}});
 }
 export async function GET(req:NextRequest){
- if(!isOwnerRequest(req))return NextResponse.json({error:'Owner access required'},{status:401,headers});
+ if(!await ownerAuthenticated(req))return NextResponse.json({error:'Owner access required'},{status:401,headers});
  const client=db();if(!client)return NextResponse.json({error:'Database unavailable'},{status:503,headers});
  const {data,error}=await client.from('custom_alert_tickers').select('ticker,enabled').order('ticker',{ascending:true}).limit(25);
  if(error)return NextResponse.json({error:'Custom alert setup is not installed yet'},{status:503,headers});
@@ -19,7 +20,7 @@ export async function GET(req:NextRequest){
 }
 export async function PUT(req:NextRequest){
  if(!isSameOrigin(req))return NextResponse.json({error:'Forbidden origin'},{status:403,headers});
- if(!isOwnerRequest(req))return NextResponse.json({error:'Owner access required'},{status:401,headers});
+ if(!await ownerAuthenticated(req))return NextResponse.json({error:'Owner access required'},{status:401,headers});
  const client=db();if(!client)return NextResponse.json({error:'Database unavailable'},{status:503,headers});
  let payload:{ticker?:unknown;enabled?:unknown};
  try{payload=await req.json();}catch{return NextResponse.json({error:'Invalid JSON'},{status:400,headers});}

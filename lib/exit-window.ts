@@ -9,7 +9,7 @@ export function exitWindow(confirmedAt:string|null|undefined,now:Date):ExitWindo
  if(base>now.getTime()+60000)return null;
  // Protect against old/overnight signals; the UI only provides same-day alert history.
  const nyDay=(ms:number)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms));
- if(nyDay(base)!==nyDay(now))return null;
+ if(nyDay(base)!==nyDay(now.getTime()))return null;
  const review=base+EXIT_REVIEW_MINUTES*60000,timebox=base+EXIT_TIMEBOX_MINUTES*60000;
  return {confirmedAt:new Date(base).toISOString(),reviewAt:new Date(review).toISOString(),timeboxAt:new Date(timebox).toISOString(),
   phase:now.getTime()<review?'MONITOR':now.getTime()<timebox?'REVIEW EXIT':'TIMEBOX ELAPSED'};

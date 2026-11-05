@@ -262,3 +262,11 @@
 .passkeyRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #294359;color:#acc4d3;font-size:12px}
 .passkeyRow button{border:1px solid #51677a;background:#1a3345;border-radius:7px;padding:7px 11px;color:#ffd4d4;cursor:pointer}
 @media(max-width:700px){.passkeySettings{padding:10px}.passkeyRow{flex-wrap:wrap}.passkeyButton{width:100%}}
+
+/* V2.9 read-only reliability diagnostics; responsive five-column custom table */
+.monitorCellSub{display:block;color:#8aaabd;font-size:10px;margin-top:4px}
+.monitorTableWrap{scrollbar-width:thin}
+.monitorTable td{vertical-align:top}
+.monitorTable td strong{color:#dff4ec}
+.monitorMessage.monitorWarning{border-left:3px solid #d8a05f;background:#302535;margin:8px 19px;padding:14px}
+@media(max-width:700px){.monitorTable{min-width:520px}.monitorMessage.monitorWarning{margin:8px 10px}}

@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
 import {classifyScannerHealth,summarizeDeliveryStatus,type RunRecord,type DeliveryRecord} from '@/lib/scanner-health';
-import {sessionGapSummary,deliveryIncidents,customDiagnosticSummary,type CustomRow} from '@/lib/reliability-v29';
+import {sessionGapSummary,deliveryIncidents,customDiagnosticSummary,ownerOnlyCustomPayload,type CustomRow} from '@/lib/reliability-v29';
 import {fetchTradingSession,sessionState} from '@/lib/market-calendar';
 import {ownerAuthenticated} from '@/lib/owner-security';
 export const dynamic='force-dynamic';
@@ -50,7 +50,7 @@ export async function GET(req:NextRequest){
   }
   return NextResponse.json({
    asOf:now.toISOString(),marketState,health,deliveries,
-   reliability:{gaps,telegram,custom},
+   reliability:{gaps,telegram,custom:ownerOnlyCustomPayload(authorized,custom)},
    configuration:'Scheduled two-minute weekday scans. Scanner gaps are assessed only against verified Alpaca exchange sessions.',
    recentRuns:list.slice(0,10).map(r=>({at:r.created_at,marketState:r.market_state,signalCount:r.signal_count,mode:r.mode})),
    note:'Read-only monitoring. Telegram SENT means API acknowledgement, not phone receipt. No scan, Telegram message or trade is started by this endpoint.'

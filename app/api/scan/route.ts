@@ -3,6 +3,8 @@ import {createClient} from '@supabase/supabase-js';
 import {timingSafeEqual,createHash} from 'node:crypto';
 import {getReport} from '@/lib/report';
 import {sendTelegram,formatAlert} from '@/lib/telegram';
+import {getEnabledCustomAlerts,evaluateCustomAlerts,isEligibleConfirmation} from '@/lib/custom-alerts';
+import {fetchTradingSession} from '@/lib/market-calendar';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
 const safeEq=(a:string,b:string)=>timingSafeEqual(createHash('sha256').update(a).digest(),createHash('sha256').update(b).digest());
@@ -17,9 +19,20 @@ export async function POST(req:NextRequest){
  const db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
  // Only confirmed, fresh, same-session records are candidates. Never alert on demo or premarket levels.
  const confirmed=report.mode==='IEX LIVE'&&report.marketState==='REGULAR SESSION'
-   ?report.signals.filter(s=>s.fresh&&s.timestamp&&s.status.startsWith('CONFIRMED ')&&
-       new Date(s.timestamp).getTime()<=now.getTime()&&now.getTime()-new Date(s.timestamp).getTime()<5*60000)
+   ?report.signals.filter(s=>isEligibleConfirmation(s,now))
    :[];
+ // Custom symbols are a separate explicit opt-in, never modifying the original eight.
+ // Missing config/table/market bars fail closed for custom symbols only.
+ if(report.mode==='IEX LIVE'&&report.marketState==='REGULAR SESSION'){
+  try{
+   const enabled=await getEnabledCustomAlerts();
+   if(enabled.length){
+    const session=await fetchTradingSession(now);
+    if(session?.isTradingDay&&session.source==='ALPACA')
+     confirmed.push(...await evaluateCustomAlerts(enabled,now,session));
+   }
+  }catch{console.error('Custom alert scan unavailable; core scanner continues');}
+ }
  const {error:logError}=await db.from('scan_runs').insert({mode:report.mode,market_state:report.marketState,signal_count:report.signals.length,report});
  if(logError)return NextResponse.json({error:'Database missing scan_runs; apply db/schema.sql'},{status:503});
  const day=nyDay(now);
@@ -61,6 +74,6 @@ export async function POST(req:NextRequest){
   }
  }
  return NextResponse.json({ok:failed===0,asOf:report.asOf,eligible:confirmed.length,sent,duplicate,failed,
-  note: 'At most one alert per ticker/direction/day; a failed delivery is logged and requires manual intervention.'},
+  note: 'At most one alert per ticker/direction/day; optional custom monitoring uses identical confirmations. Failed delivery requires manual intervention.'},
   {status:failed?502:200});
 }

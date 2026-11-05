@@ -45,3 +45,9 @@ export function customDiagnosticSummary(now:Date,enabled:string[],rows:CustomRow
    errorsLast15m:matches.filter(r=>r.outcome==='ERROR'&&Date.parse(r.scan_at)>=since).length};
  });
 }
+
+/** Defense in depth: always mask personal stock subscriptions from public Health responses. */
+export function ownerOnlyCustomPayload<T extends {access:string;monitored:number|null;symbols:unknown[]}>(authenticated:boolean,data:T):T|{access:'OWNER_ONLY';monitored:null;symbols:[]}{
+ if(!authenticated)return {access:'OWNER_ONLY',monitored:null,symbols:[]};
+ return data;
+}

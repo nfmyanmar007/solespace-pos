@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@simplewebauthn/server": "14.0.3",
+    "@simplewebauthn/browser": "14.0.0",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -18,5 +20,8 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

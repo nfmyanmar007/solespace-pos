@@ -25,6 +25,16 @@ export async function POST(req:NextRequest){
  res.cookies.set(ADMIN_COOKIE,createAdminSession(),{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:ADMIN_COOKIE_AGE});
  return res;
 }
+export async function PATCH(req:NextRequest){
+ if(!isSameOrigin(req))return NextResponse.json({error:'Forbidden origin'},{status:403,headers});
+ // A stolen trusted-device session alone can never revoke every other device.
+ if(!validAdminSession(req.cookies.get(ADMIN_COOKIE)?.value))
+  return NextResponse.json({error:'Unlock with owner key to revoke all trusted devices'},{status:401,headers});
+ const db=ownerDb();if(!db)return NextResponse.json({error:'Database unavailable'},{status:503,headers});
+ const {error}=await db.from('owner_trusted_devices').delete().gte('created_at','1970-01-01T00:00:00.000Z');
+ if(error)return NextResponse.json({error:'Unable to revoke trusted devices'},{status:503,headers});
+ return NextResponse.json({revoked:true},{headers});
+}
 export async function DELETE(req:NextRequest){
  if(!isSameOrigin(req))return NextResponse.json({error:'Forbidden origin'},{status:403,headers});
  try{await revokeCurrentDevice(req);}catch{return NextResponse.json({error:'Could not revoke this trusted device. Try again.'},{status:503,headers});}

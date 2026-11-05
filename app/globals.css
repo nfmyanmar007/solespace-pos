@@ -250,3 +250,15 @@
 .alertToggleEnd input{width:21px;height:21px;accent-color:#5de2ac;cursor:pointer}
 .alertToggleEnd input:disabled{cursor:not-allowed;opacity:.55}
 @media(max-width:700px){.customAlertControls{padding:12px 9px}.alertToggleRow{padding:12px 10px}}
+
+
+/* Owner-only passkey and 30-day trusted device settings */
+.trustedCheckbox{display:flex;align-items:center;gap:9px;margin:12px 0;color:#c6d4e1;font-size:12px;cursor:pointer}
+.trustedCheckbox input{height:18px;width:18px;accent-color:#4fe4ae}
+.passkeyButton{display:block;background:#173b32;color:#b9f6dc;border:1px solid #368b70;border-radius:9px;padding:11px 13px;font-size:12px;font-weight:750;cursor:pointer;margin:8px 0;min-height:44px}
+.passkeyButton:disabled{opacity:.6;cursor:not-allowed}
+.passkeySettings{background:#122635;border:1px solid #30495a;border-radius:11px;padding:13px;margin:9px 0}
+.passkeySettings>strong{color:#e1f6ef}
+.passkeyRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #294359;color:#acc4d3;font-size:12px}
+.passkeyRow button{border:1px solid #51677a;background:#1a3345;border-radius:7px;padding:7px 11px;color:#ffd4d4;cursor:pointer}
+@media(max-width:700px){.passkeySettings{padding:10px}.passkeyRow{flex-wrap:wrap}.passkeyButton{width:100%}}

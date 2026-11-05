@@ -270,3 +270,8 @@
 .monitorTable td strong{color:#dff4ec}
 .monitorMessage.monitorWarning{border-left:3px solid #d8a05f;background:#302535;margin:8px 19px;padding:14px}
 @media(max-width:700px){.monitorTable{min-width:520px}.monitorMessage.monitorWarning{margin:8px 10px}}
+
+/* ORCL premarket display-only fallback: visually separate from actionable IEX levels */
+.premarketSource{display:block;font-size:10px!important;line-height:1.45;color:#e4c48f!important;font-weight:700;letter-spacing:.15px;margin-top:5px;white-space:normal}
+.mobileStockCard .premarketSource{font-size:9px!important;text-align:left;margin-top:-6px}
+@media(max-width:700px){.mobileStockCard:has(.premarketSource){min-height:215px}}

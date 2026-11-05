@@ -1,7 +1,8 @@
 // Read-only dashboard classification. Never enroll a custom ticker into Telegram.
 import type {Signal} from './engine.ts';
 import {CORE_TICKERS,cleanSymbol,MAX_WATCHLIST,isCore} from './watchlist.ts';
-export type DisplaySignal=Signal&{scannerEnabled:boolean};
+export type CoreDisplayRow=Omit<Signal,'ticker'>&{ticker:string};
+export type DisplaySignal=CoreDisplayRow&{scannerEnabled:boolean};
 export function normalizeCustomQuery(raw:string|null):string[]|null{
  if(raw===null||raw.trim()==='')return [];
  const requested=raw.split(',');
@@ -18,8 +19,8 @@ export function asChartOnlySignal(signal:Signal):DisplaySignal{
  return {...signal,status:signal.status.startsWith('CONFIRMED')?'RESEARCH '+signal.status.replace('CONFIRMED ',''):signal.status,scannerEnabled:false,
   reason:signal.status.startsWith('CONFIRMED')?'Research checks pass, but Telegram alert scanning is disabled for this custom ticker. '+signal.reason:signal.reason};
 }
-export function asScannerSignal(signal:Signal):DisplaySignal{return {...signal,scannerEnabled:true};}
-export function mergeUnifiedSignals(core:Signal[],custom:DisplaySignal[]):DisplaySignal[]{
+export function asScannerSignal(signal:CoreDisplayRow):DisplaySignal{return {...signal,scannerEnabled:true};}
+export function mergeUnifiedSignals(core:CoreDisplayRow[],custom:DisplaySignal[]):DisplaySignal[]{
  const originals=core.filter(s=>isCore(s.ticker)).map(asScannerSignal),seen=new Set(originals.map(s=>s.ticker));
  return [...originals,...custom.filter(s=>!seen.has(s.ticker)&&!isCore(s.ticker))];
 }

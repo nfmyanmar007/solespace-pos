@@ -28,7 +28,7 @@ All tables have RLS enabled and anonymous/authenticated privileges revoked. Serv
 5. Later, tap **Unlock with Face ID / Passkey**. A verified WebAuthn assertion issues a revocable 30-day session.
 6. Alternatively, use the owner key with **Remember this device for 30 days** checked. This also issues a hashed, revocable 30-day session.
 
-**Lock settings** revokes the current 30-day trusted device token and clears authentication cookies. A new device/browser must authenticate separately. 30 days is a fixed maximum, not automatically extended on browsing.
+**Lock settings** revokes the current 30-day trusted device token and clears authentication cookies. If a phone is lost, unlock using the owner key with 30-day remembering unchecked, then choose **Revoke all 30-day trusted devices**; this invalidates all remembered device tokens without deleting passkeys. A new device/browser must authenticate separately. 30 days is a fixed maximum, not automatically extended on browsing.
 
 ## Security and limitations
 

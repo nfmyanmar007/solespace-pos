@@ -281,3 +281,20 @@
 .exitWindowHint strong{color:#ffe4a5;font-size:10px;letter-spacing:.35px}
 .exitWindowHint small{font-size:10px;line-height:1.4;color:#a9c3b8}
 .historyItem .exitWindowHint{width:100%}
+
+/* V3.0 informational IEX stock outcome scorecard (no options P&L). */
+.signalPerformance{margin-top:18px;overflow:hidden}
+.perfIntro{margin:14px 19px;color:#b5cada;font-size:12px}
+.perfScoreGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 19px 22px}
+.perfScore{display:flex;flex-direction:column;gap:9px;min-width:0;border-radius:11px;border:1px solid #334b59;background:#162735;padding:16px}
+.perfScore>small{color:#9bafc1;font-size:10px;line-height:1.5}
+.perfScore>strong{font-size:23px;font-variant-numeric:tabular-nums;color:#e5f5f0}
+.perfScore>span{font-size:11px;color:#c7d8e4}
+.perfTable{min-width:660px}
+.perfTable td{font-variant-numeric:tabular-nums}
+.perfTable td small,.perfDetail{display:block;font-size:10px;color:#9ab1c2;margin-top:5px}
+.perfGood{color:#7ce6bc;font-weight:800}
+.perfBad{color:#f8a6b4;font-weight:800}
+.perfMuted{color:#9eb0c3}
+.perfWarning{margin:10px 19px;padding:12px;border:1px solid #705c41;background:#302637;color:#f8c4aa;font-size:12px;border-radius:8px}
+@media(max-width:700px){.perfScoreGrid{grid-template-columns:1fr;gap:8px;margin:10px 11px 15px}.perfScore{padding:13px}.perfScore>strong{font-size:20px}.perfIntro{margin:12px 11px}.perfWarning{margin:10px 11px}}

@@ -21,9 +21,7 @@ export function trustCookie(res:NextResponse,token:string){
 export function clearOwnerCookies(res:NextResponse){
  for(const name of [TRUSTED_COOKIE,ADMIN_COOKIE])res.cookies.set(name,'',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:0});
 }
-export async function createTrustedDevice(db:SupabaseClient,label='Trusted browser'):{
- token:string; expiresAt:string
-}|Promise<{token:string;expiresAt:string}>{
+export async function createTrustedDevice(db:SupabaseClient,label='Trusted browser'):Promise<{token:string;expiresAt:string}>{
  const token=randomToken(),expiresAt=new Date(Date.now()+TRUSTED_SECONDS*1000).toISOString();
  const {error}=await db.from('owner_trusted_devices').insert({token_hash:hashToken(token),expires_at:expiresAt,label:label.slice(0,80)});
  if(error)throw new Error('Cannot save trusted session. Database migration may be missing.');

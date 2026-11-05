@@ -40,6 +40,16 @@ export default function CustomAlertControls({symbols,onChanged}:{symbols:string[
   }catch(e){setFeedback(e instanceof Error?e.message:'Passkey request was canceled or unsupported');}
   finally{setBusy(false);}
  }
+ async function revokeAllDevices(){
+  if(!session?.ownerKeySession||busy||!window.confirm('Revoke all 30-day trusted browsers? Every remembered device will need to sign in again.'))return;
+  setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/custom-alerts/session',{method:'PATCH',credentials:'same-origin'});
+   const result=await res.json();if(!res.ok)throw Error(result.error||'Could not revoke devices');
+   setFeedback('All 30-day trusted devices revoked. Your current 12-hour owner-key session remains active.');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Cannot revoke devices');}
+  finally{setBusy(false);}
+ }
  async function removePasskey(id:string){
   if(busy||!session?.ownerKeySession)return;setBusy(true);setFeedback('');
   try{
@@ -84,6 +94,7 @@ export default function CustomAlertControls({symbols,onChanged}:{symbols:string[
      {session.ownerKeySession&&supportsPasskey&&<button type="button" className="passkeyButton" disabled={busy||passkeys.length>=5} onClick={()=>passkeyFlow('register')}>＋ Register Face ID / Passkey</button>}
      {passkeys.map((p,i)=><div className="passkeyRow" key={p.credential_id}><span>Passkey {i+1} · Added {new Date(p.created_at).toLocaleDateString('en-US')}</span>{session.ownerKeySession&&<button type="button" disabled={busy} onClick={()=>removePasskey(p.credential_id)}>Remove</button>}</div>)}
      {!passkeys.length&&<p className="watchNote">No passkeys registered yet.</p>}
+     {session.ownerKeySession&&<button type="button" className="alertOwnerLogout" disabled={busy} onClick={revokeAllDevices}>Revoke all 30-day trusted devices</button>}
     </div>
     <p className="watchNote">{active}/{maxEnabled} optional stocks enabled. Changes apply to the next scheduled scan; they do not create immediate Telegram messages.</p>
     {symbols.map(ticker=>{

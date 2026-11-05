@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {generateRegistrationOptions,verifyRegistrationResponse,generateAuthenticationOptions,verifyAuthenticationResponse,type RegistrationResponseJSON,type AuthenticationResponseJSON} from '@simplewebauthn/server';
 import {validAdminSession} from '@/lib/custom-alert-admin';
+import {verifyStoredPasskey} from '@/lib/passkey-persistence';
 import {ownerDb,ownerAuthenticated,isSameOrigin,webauthnOrigin,persistChallenge,consumeChallenge,createTrustedDevice,trustCookie,clearOwnerCookies} from '@/lib/owner-security';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
@@ -47,8 +48,10 @@ export async function POST(req:NextRequest){
    const {error}=await db.from('owner_passkeys').insert({credential_id:credential.id,
     public_key:Buffer.from(credential.publicKey).toString('base64url'),counter:credential.counter,
     transports:credential.transports||[]});
-   if(error)return fail('Passkey could not be saved',503);
-   return NextResponse.json({ok:true,passkeyRegistered:true},{headers});
+   if(error)return fail('Passkey could not be saved in the configured database',503);
+   const stored=await verifyStoredPasskey(db,credential.id);
+   if(!stored)return fail('Passkey could not be verified in the database. Registration is not confirmed.',503);
+   return NextResponse.json({ok:true,passkeyRegistered:true,verifiedStored:true,credentialId:credential.id},{headers});
   }
   if(body.action==='start-login'){
    const {data,error}=await db.from('owner_passkeys').select('credential_id,transports').limit(6);

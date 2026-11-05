@@ -34,8 +34,15 @@ export default function CustomAlertControls({symbols,onChanged}:{symbols:string[
    const result=await finish.json();if(!finish.ok)throw Error(result.error||'Passkey verification failed');
    if(mode==='login'){setSession({configured:true,authenticated:true,ownerKeySession:false});setFeedback('Signed in with your passkey. This browser is trusted for 30 days.');}
    else{
-    const list=await fetch('/api/custom-alerts/passkeys',{cache:'no-store'});if(list.ok)setPasskeys((await list.json()).passkeys||[]);
-    setFeedback('Passkey registered successfully. Next time use Face ID / passkey.');
+    if(result.passkeyRegistered!==true||result.verifiedStored!==true||typeof result.credentialId!=='string')
+     throw Error('Registration was not verified as saved. Please retry.');
+    const list=await fetch('/api/custom-alerts/passkeys',{cache:'no-store',credentials:'same-origin'});
+    if(!list.ok)throw Error('Registration could not be verified from the database. Please retry.');
+    const entries=(await list.json()).passkeys as PasskeyInfo[]|undefined;
+    if(!Array.isArray(entries)||!entries.some(p=>p.credential_id===result.credentialId))
+     throw Error('Passkey missing from saved device list. Registration is not confirmed. Contact support.');
+    setPasskeys(entries);
+    setFeedback('Passkey saved and verified in Supabase. You can now unlock with Face ID / passkey.');
    }
   }catch(e){setFeedback(e instanceof Error?e.message:'Passkey request was canceled or unsupported');}
   finally{setBusy(false);}

@@ -4,6 +4,7 @@ import LiveChart from './components/LiveChart';
 import ExitWindowHint from './components/ExitWindowHint';
 import MobileWatchlist from './components/MobileWatchlist';
 import AlertHistory from './components/AlertHistory';
+import SignalPerformance from './components/SignalPerformance';
 import ScannerMonitor from './components/ScannerMonitor';
 import WatchlistManager from './components/WatchlistManager';
 import {CORE_TICKERS} from '@/lib/watchlist';
@@ -43,7 +44,7 @@ export default function Home(){
  return <main className="shell">
   <aside className="sidebar"><div className="brand"><div className="brandIcon">⌁</div><div><strong>OPTIONTRIGGER</strong><small>PRO / SIGNAL TERMINAL</small></div></div><div className="navlabel">WORKSPACE</div>{DASHBOARD_TABS.map(t=><button key={t.key} className={'navitem dashboardSideTab '+(activeTab===t.key?'selected':'')} onClick={()=>setActiveTab(t.key)} type="button" aria-current={activeTab===t.key?'page':undefined}>{t.icon} <span>{t.shortLabel}</span></button>)}<div className="navlabel second">WATCHLIST</div>{tickers.slice(1).map(t=><button className={'watch '+(ticker===t?'active':'')} key={t} onClick={()=>{setTicker(t);openChart(t)}}><span className="watchDot"/> {t} <span className="chev">›</span></button>)}<div className="sidefoot"><strong>Research mode</strong><p>Signals do not place trades. All levels require independent verification.</p></div></aside>
   <section className="content"><header className="topbar"><div><span className="crumb">WORKSPACE /</span> DAILY DASHBOARD</div><div className="topright"><span className="liveDot"/> {report?.mode==='IEX LIVE'?'IEX DATA':'DEMO MODE'} <span className="dividerV"/> ET MARKET</div></header>
-  <div className="mainInner"><div className="heading"><div><p className="eyebrow">TRADING INTELLIGENCE / V2.9</p><h1>Daily Trigger Dashboard</h1><p className="muted">Premarket levels · Opening range · VWAP confirmation</p></div><button className="refresh" onClick={refresh} disabled={busy}>{busy?'Refreshing…':'↻  Refresh data'}</button></div>
+  <div className="mainInner"><div className="heading"><div><p className="eyebrow">TRADING INTELLIGENCE / V3.0</p><h1>Daily Trigger Dashboard</h1><p className="muted">Premarket levels · Opening range · VWAP confirmation</p></div><button className="refresh" onClick={refresh} disabled={busy}>{busy?'Refreshing…':'↻  Refresh data'}</button></div>
   {error&&<div className="notice error">{error}</div>}
   <div className="notice"><strong>{report?.mode==='IEX LIVE'?'IEX EQUITY FEED':'ILLUSTRATIVE DEMO'}</strong><span>{report?.mode==='IEX LIVE'?'Premarket highs/lows are provisional and may be sparse or stale on IEX. When ORCL has no IEX quote, a delayed SIP reference may appear separately; it NEVER affects scanner levels or alerts. No consolidated exchange feed, options quotes, or automatic execution.':'This dashboard displays example values until Alpaca keys are configured. Do not trade from demo levels.'}</span></div>
   <nav className="dashboardTabs" aria-label="Dashboard sections">{DASHBOARD_TABS.map(t=><button key={t.key} type="button" aria-current={activeTab===t.key?'page':undefined} aria-controls={'dashboard-'+t.key} className={'dashboardTab '+(activeTab===t.key?'active':'')} onClick={()=>setActiveTab(t.key)}><span className="dashboardTabIcon">{t.icon}</span>{t.label}</button>)}</nav>
@@ -67,6 +68,7 @@ export default function Home(){
   </section>}
   {activeTab==='alerts'&&<section id="dashboard-alerts" aria-label="Telegram alert history" className="dashboardTabContent">
   <AlertHistory onSelectTicker={openChart}/>
+  <SignalPerformance/>
   <div className="notice" style={{marginTop:20,background:'#102925',borderColor:'#285345',color:'#b4e8d5',alignItems:'flex-start'}}>
     <strong style={{color:'#55e3b5'}}>AUTOMATED ALERTS</strong>
     <span>Telegram alert setup is available in this release. The active Supabase scheduler is configured for checks every 2 minutes on weekdays; actual timing may vary. Exchange holidays and early closes are checked from the Alpaca calendar. Calendar or data failures prevent confirmation. Only completed, fresh, confirmed CALL/PUT signals during regular hours qualify. One alert per ticker and direction per NY trading day. Premarket preliminary levels never alert. The app cannot currently confirm options bid/ask or contract prices.</span>

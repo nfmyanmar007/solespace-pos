@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {sessionGapSummary,deliveryIncidents,customDiagnosticSummary} from '../lib/reliability-v29.ts';
+import {sessionGapSummary,deliveryIncidents,customDiagnosticSummary,ownerOnlyCustomPayload} from '../lib/reliability-v29.ts';
 import {outcomeFromSignal,inspectCustomTickers,skippedCustomTickers} from '../lib/scanner-diagnostics.ts';
 const now=new Date('2026-11-05T15:10:00.000Z'); // Thu 10:10 ET
 const session={date:'2026-11-05',isTradingDay:true,source:'ALPACA',openMinute:570,closeMinute:960};
@@ -60,4 +60,10 @@ test('custom diagnostic scanning refuses duplicate, core, or over-capacity ticke
  const load=async()=>{throw Error('should not fetch');};
  for(const symbols of [['ORCL','ORCL'],['QQQ'],['ORCL','META','PLTR','SOFI','RIVN']])
   await assert.rejects(inspectCustomTickers(symbols,now,session,load));
+});
+
+test('anonymous Health responses cannot expose owner custom ticker subscriptions',()=>{
+ const data={access:'AVAILABLE',monitored:1,symbols:[{ticker:'ORCL',outcome:'CONFIRMED'}]};
+ assert.deepEqual(ownerOnlyCustomPayload(false,data),{access:'OWNER_ONLY',monitored:null,symbols:[]});
+ assert.deepEqual(ownerOnlyCustomPayload(true,data),data);
 });

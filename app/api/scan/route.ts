@@ -3,7 +3,8 @@ import {createClient} from '@supabase/supabase-js';
 import {timingSafeEqual,createHash} from 'node:crypto';
 import {getReport} from '@/lib/report';
 import {sendTelegram,formatAlert} from '@/lib/telegram';
-import {getEnabledCustomAlerts,evaluateCustomAlerts,isEligibleConfirmation} from '@/lib/custom-alerts';
+import {getEnabledCustomAlerts,isEligibleConfirmation} from '@/lib/custom-alerts';
+import {inspectCustomTickers,skippedCustomTickers,type CustomCheck} from '@/lib/scanner-diagnostics';
 import {fetchTradingSession} from '@/lib/market-calendar';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -21,17 +22,26 @@ export async function POST(req:NextRequest){
  const confirmed=report.mode==='IEX LIVE'&&report.marketState==='REGULAR SESSION'
    ?report.signals.filter(s=>isEligibleConfirmation(s,now))
    :[];
- // Custom symbols are a separate explicit opt-in, never modifying the original eight.
- // Missing config/table/market bars fail closed for custom symbols only.
+ // Diagnostic rows are best-effort and never affect confirmation, Telegram or the core 8.
+ let diagnosticChecks:CustomCheck[]=[];
  if(report.mode==='IEX LIVE'&&report.marketState==='REGULAR SESSION'){
   try{
    const enabled=await getEnabledCustomAlerts();
    if(enabled.length){
     const session=await fetchTradingSession(now);
-    if(session?.isTradingDay&&session.source==='ALPACA')
-     confirmed.push(...await evaluateCustomAlerts(enabled,now,session));
+    if(session?.isTradingDay&&session.source==='ALPACA'){
+     const result=await inspectCustomTickers(enabled,now,session);
+     confirmed.push(...result.eligible);
+     diagnosticChecks=result.checks;
+    }else diagnosticChecks=skippedCustomTickers(enabled);
    }
   }catch{console.error('Custom alert scan unavailable; core scanner continues');}
+ }
+ if(diagnosticChecks.length){
+  try{
+   const {error}=await db.from('custom_scan_diagnostics').insert(diagnosticChecks.map(check=>({...check,scan_at:now.toISOString()})));
+   if(error)console.error('Custom diagnostic logging unavailable',error.code);
+  }catch{console.error('Custom diagnostic logging unavailable');}
  }
  const {error:logError}=await db.from('scan_runs').insert({mode:report.mode,market_state:report.marketState,signal_count:report.signals.length,report});
  if(logError)return NextResponse.json({error:'Database missing scan_runs; apply db/schema.sql'},{status:503});

@@ -179,3 +179,15 @@
  .watchAddForm input{font-size:16px}
  .watchFeedback{padding:0 12px 12px}
 }
+
+
+/* V2.4: a single unified scanner + research watchlist */
+.mobileStockScope{display:block;font-size:9px;font-weight:750;letter-spacing:.6px;color:#90b9c9;margin-top:4px}
+.mobileStockCard .mobileCardTop strong{min-width:0}
+.mobileStockCard .mobileSignalBadge{white-space:normal;max-width:60%;text-align:center}
+.panel .watchManager{margin:12px 18px 18px;border:1px solid #32445a;border-radius:12px;background:#101d2b}
+.panel .watchManager .paneltop{border-bottom:0}
+@media(max-width:700px){
+ .panel .watchManager{margin:10px 9px 12px}
+ .mobileStockScope{font-size:9px}
+}

@@ -3,6 +3,7 @@ import {useEffect,useState,useCallback} from 'react';
 import LiveChart from './components/LiveChart';
 import MobileWatchlist from './components/MobileWatchlist';
 import AlertHistory from './components/AlertHistory';
+import ScannerMonitor from './components/ScannerMonitor';
 import WatchlistManager from './components/WatchlistManager';
 import {CORE_TICKERS} from '@/lib/watchlist';
 import {mergeUnifiedSignals,type DisplaySignal} from '@/lib/unified-watchlist';
@@ -38,7 +39,7 @@ export default function Home(){
  return <main className="shell">
   <aside className="sidebar"><div className="brand"><div className="brandIcon">⌁</div><div><strong>OPTIONTRIGGER</strong><small>PRO / SIGNAL TERMINAL</small></div></div><div className="navlabel">WORKSPACE</div>{DASHBOARD_TABS.map(t=><button key={t.key} className={'navitem dashboardSideTab '+(activeTab===t.key?'selected':'')} onClick={()=>setActiveTab(t.key)} type="button" aria-current={activeTab===t.key?'page':undefined}>{t.icon} <span>{t.shortLabel}</span></button>)}<div className="navlabel second">WATCHLIST</div>{tickers.slice(1).map(t=><button className={'watch '+(ticker===t?'active':'')} key={t} onClick={()=>{setTicker(t);openChart(t)}}><span className="watchDot"/> {t} <span className="chev">›</span></button>)}<div className="sidefoot"><strong>Research mode</strong><p>Signals do not place trades. All levels require independent verification.</p></div></aside>
   <section className="content"><header className="topbar"><div><span className="crumb">WORKSPACE /</span> DAILY DASHBOARD</div><div className="topright"><span className="liveDot"/> {report?.mode==='IEX LIVE'?'IEX DATA':'DEMO MODE'} <span className="dividerV"/> ET MARKET</div></header>
-  <div className="mainInner"><div className="heading"><div><p className="eyebrow">TRADING INTELLIGENCE / V2.5</p><h1>Daily Trigger Dashboard</h1><p className="muted">Premarket levels · Opening range · VWAP confirmation</p></div><button className="refresh" onClick={refresh} disabled={busy}>{busy?'Refreshing…':'↻  Refresh data'}</button></div>
+  <div className="mainInner"><div className="heading"><div><p className="eyebrow">TRADING INTELLIGENCE / V2.6</p><h1>Daily Trigger Dashboard</h1><p className="muted">Premarket levels · Opening range · VWAP confirmation</p></div><button className="refresh" onClick={refresh} disabled={busy}>{busy?'Refreshing…':'↻  Refresh data'}</button></div>
   {error&&<div className="notice error">{error}</div>}
   <div className="notice"><strong>{report?.mode==='IEX LIVE'?'IEX EQUITY FEED':'ILLUSTRATIVE DEMO'}</strong><span>{report?.mode==='IEX LIVE'?'Premarket highs/lows are provisional and may be sparse or stale on IEX. No consolidated exchange feed, options quotes, or automatic execution.':'This dashboard displays example values until Alpaca keys are configured. Do not trade from demo levels.'}</span></div>
   <nav className="dashboardTabs" aria-label="Dashboard sections">{DASHBOARD_TABS.map(t=><button key={t.key} type="button" aria-current={activeTab===t.key?'page':undefined} aria-controls={'dashboard-'+t.key} className={'dashboardTab '+(activeTab===t.key?'active':'')} onClick={()=>setActiveTab(t.key)}><span className="dashboardTabIcon">{t.icon}</span>{t.label}</button>)}</nav>
@@ -69,6 +70,9 @@ export default function Home(){
   </section>}
   {activeTab==='rules'&&<section id="dashboard-rules" aria-label="Scanner rules and risk notes" className="dashboardTabContent">
   <div className="lower"><div className="panel detail"><h2>Confirmation checklist</h2><p className="muted">All conditions must pass before a signal is marked confirmed.</p><div className="checks">{['Complete 9:30–9:35 opening range','Two completed, consecutive 1-minute candle closes','Price direction aligned with VWAP','Prior 5-minute trend alignment','Volume ratio ≥ 1.10×','Fresh IEX bars; no extended entry'].map((x,i)=><div className="check" key={x}><span className="checknum">{String(i+1).padStart(2,'0')}</span>{x}<span className="checkright">REQUIRED</span></div>)}</div></div><div className="panel detail"><h2>Signal explanation</h2><p className="muted">{ticker==='ALL'?'Select a ticker to inspect its latest scanner or research-only status.':'Latest evaluated setup for '+ticker}</p><div className="explanation">{ticker==='ALL'?'Use the ticker filter or choose a watchlist symbol to inspect detailed signal conditions.':rows[0]?.reason||'No data yet'}</div><div className="exfoot"><span>Last candle</span><strong>{rows[0]?.timestamp?new Date(rows[0].timestamp).toLocaleString('en-US',{timeZone:'America/New_York'}):'—'}</strong></div></div></div>
+  </section>}
+  {activeTab==='health'&&<section id="dashboard-health" aria-label="Scanner and Telegram monitoring" className="dashboardTabContent">
+  <ScannerMonitor/>
   </section>}
   <footer>OPTIONTRIGGER PRO · RESEARCH / PAPER EVALUATION ONLY · NOT INVESTMENT ADVICE</footer></div></section></main>
 }

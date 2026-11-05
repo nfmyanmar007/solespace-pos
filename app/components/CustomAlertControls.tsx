@@ -58,8 +58,14 @@ export default function CustomAlertControls({symbols,onChanged}:{symbols:string[
   }catch(e){setFeedback(e instanceof Error?e.message:'Unable to save switch');}finally{setBusy(false);}
  }
  async function logout(){
-  await fetch('/api/custom-alerts/session',{method:'DELETE',credentials:'same-origin'}).catch(()=>{});
-  setSession({configured:true,authenticated:false,ownerKeySession:false});setSubscriptions([]);setKey('');setFeedback('');
+  if(busy)return;setBusy(true);setFeedback('');
+  try{
+   const res=await fetch('/api/custom-alerts/session',{method:'DELETE',credentials:'same-origin'});
+   if(!res.ok)throw Error('This device could not be revoked. Please retry.');
+   setSession({configured:true,authenticated:false,ownerKeySession:false});
+   setSubscriptions([]);setKey('');
+  }catch(e){setFeedback(e instanceof Error?e.message:'Unable to lock settings');}
+  finally{setBusy(false);}
  }
  const active=subscriptions.filter(s=>s.enabled).length;
  return <div className="customAlertControls" aria-label="Custom stock Telegram alert settings">

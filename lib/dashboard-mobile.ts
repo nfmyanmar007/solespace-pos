@@ -1,7 +1,8 @@
 import {easternClock} from './market-calendar.ts';
+import {cleanSymbol} from './watchlist.ts';
 export const WATCHLIST=['QQQ','SPY','TSLA','NVDA','AMD','AAPL','MSFT','GOOGL'] as const;
 export type WatchTicker=typeof WATCHLIST[number];
-export type DeliveredAlert={ticker:WatchTicker;direction:'CALL'|'PUT';price:number;trigger:number;barTimestamp:string;sentAt:string};
+export type DeliveredAlert={ticker:string;direction:'CALL'|'PUT';price:number;trigger:number;barTimestamp:string;sentAt:string};
 export function todayNY(now:Date){return easternClock(now).date;}
 export function isWatchTicker(value:unknown):value is WatchTicker{
  return typeof value==='string'&&WATCHLIST.some(t=>t===value);
@@ -21,7 +22,7 @@ export function normalizeDeliveredAlerts(records:unknown,now:Date):DeliveredAler
  for(const r of records){
   if(!r||typeof r!=='object')continue;
   const a=r as Record<string,unknown>;
-  if(!isWatchTicker(a.ticker)||(a.direction!=='CALL'&&a.direction!=='PUT')||a.status!=='sent'||a.session_date!==date)continue;
+  if(typeof a.ticker!=='string'||cleanSymbol(a.ticker)!==a.ticker||(a.direction!=='CALL'&&a.direction!=='PUT')||a.status!=='sent'||a.session_date!==date)continue;
   if(typeof a.bar_timestamp!=='string'||typeof a.sent_at!=='string')continue;
   const bar=Date.parse(a.bar_timestamp),sent=Date.parse(a.sent_at);
   const price=Number(a.price),trigger=Number(a.trigger_price);

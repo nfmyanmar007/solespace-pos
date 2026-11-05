@@ -210,3 +210,28 @@
  .dashboardTabContent{min-height:250px}
  .chartSectionHeading{padding:12px}
 }
+
+
+/* V2.6 read-only scanner reliability health */
+.scannerMonitor{overflow:hidden}
+.monitorMessage{padding:18px 22px;color:#c5d4e4;font-size:13px}
+.monitorHealth{display:flex;align-items:center;gap:14px;border:1px solid #344a5e;background:#172635;border-radius:12px;padding:15px;margin:14px 19px}
+.monitorHealth b{font-size:12px}
+.monitorHealth p{color:#93adbf;font-size:11px;margin:5px 0 0}
+.monitorStatus{font-size:11px;border-radius:8px;padding:10px 12px;background:#3c5269;color:#dce5f1;min-width:85px;text-align:center}
+.monitorHEALTHY{background:#1b513f;color:#74e5b9}
+.monitorLATE,.monitorNODATA{background:#653737;color:#ffc2c8}
+.monitorIDLE{background:#344661;color:#c8d9ef}
+.monitorUNKNOWN{background:#5e4c2a;color:#ffe2aa}
+.monitorMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 19px 20px}
+.monitorMetrics>div{border-radius:10px;background:#142332;border:1px solid #334458;padding:12px;display:flex;flex-direction:column;gap:8px}
+.monitorMetrics small{color:#96aec4;font-size:10px;font-weight:700}
+.monitorMetrics strong{font-size:14px;overflow-wrap:anywhere}
+.monitorWarning{color:#ffb6bd!important}
+.monitorSubheading{margin:8px 19px 12px;font-size:14px}
+.monitorTableWrap{overflow-x:auto;margin:0 19px}
+.monitorTable{width:100%;border-collapse:collapse;text-align:left}
+.monitorTable th,.monitorTable td{padding:12px;border-bottom:1px solid #293a4c;font-size:12px}
+.monitorTable th{color:#95adc3;font-size:10px}
+.monitorFootnote{padding:12px 19px 20px;font-size:11px;line-height:1.6;color:#8ca7b9}
+@media(max-width:700px){.dashboardTabs{gap:2px}.dashboardTab{font-size:10px;padding:10px 2px}.monitorMetrics{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 10px 14px}.monitorHealth{margin:12px 10px;align-items:flex-start;flex-direction:column}.monitorTableWrap{margin:0 10px}.monitorFootnote{padding:12px 10px 18px}}

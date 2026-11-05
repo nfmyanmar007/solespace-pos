@@ -3,7 +3,8 @@ export const DASHBOARD_TABS=[
  {key:'watchlist',label:'Watchlist',shortLabel:'Live Watchlist',icon:'▦'},
  {key:'chart',label:'Charts',shortLabel:'Charts & Indicators',icon:'◫'},
  {key:'alerts',label:'Alerts',shortLabel:'Telegram Alerts',icon:'◉'},
- {key:'rules',label:'Rules',shortLabel:'Trading Rules',icon:'☑'}
+ {key:'rules',label:'Rules',shortLabel:'Trading Rules',icon:'☑'},
+ {key:'health',label:'Health',shortLabel:'Scanner Health',icon:'♡'}
 ] as const;
 export type DashboardTab=typeof DASHBOARD_TABS[number]['key'];
 export function isDashboardTab(value:unknown):value is DashboardTab{

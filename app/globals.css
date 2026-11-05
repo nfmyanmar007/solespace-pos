@@ -142,3 +142,40 @@
  .indicatorMetric strong{font-size:13px}
  .indicatorDetails{grid-template-columns:1fr}
 }
+
+
+/* V2.3 chart-only personal watchlist */
+.watchManager{margin-top:18px}
+.watchManager .paneltop{align-items:flex-start}
+.watchManageToggle{background:#225249;color:#a6f1da;border:1px solid #4b9a86;border-radius:9px;font-weight:750;padding:10px 13px;white-space:nowrap}
+.watchManageToggle:focus-visible,.watchSavedChip:focus-visible,.watchRemovalList button:focus-visible{outline:2px solid #9efcd8;outline-offset:2px}
+.watchCount{font-size:12px;color:#83cbb8;background:#1f3838;border-radius:6px;padding:4px 7px;margin-left:8px}
+.watchManagedSymbols{display:flex;flex-wrap:wrap;gap:9px;padding:12px 21px}
+.watchSavedChip{border-radius:9px;background:#192d39;border:1px solid #39546a;color:#e6f4fc;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:90px;font-weight:800}
+.watchSavedChip small{font-size:9px;color:#83bfc6;font-weight:650}
+.watchSavedChip.active{border-color:#4ad0aa;background:#1f4b47}
+.watchEmpty{color:#93a9bd;font-size:12px;line-height:1.5}
+.watchManageBody{border-top:1px solid #283b4c;padding:18px 21px}
+.watchAddForm label{font-size:11px;color:#b5c7d8;display:block;font-weight:750;margin-bottom:9px}
+.watchAddForm>div{display:flex;gap:9px;max-width:410px}
+.watchAddForm input{background:#111c2b;color:#f1f6fc;border:1px solid #3a5366;border-radius:9px;padding:11px;font:inherit;min-width:0;flex:1}
+.watchAddForm button{background:#40caa2;border:0;border-radius:9px;color:#0b261f;padding:11px 14px;font-weight:800}
+.watchAddForm button:disabled{opacity:.6}
+.watchNote{font-size:11px;color:#8ba5ba;line-height:1.6;max-width:780px}
+.watchRemovalList{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.watchRemovalList>div{background:#152638;border:1px solid #2f4859;border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:12px;font-size:12px}
+.watchRemovalList button{color:#f0a0ab;background:transparent;border:0;font-weight:700}
+.watchFeedback{padding:0 21px 14px;margin:0;color:#b9d5c9;font-size:12px}
+.chartOnlyNotice{margin-top:13px;margin-bottom:0;border-color:#325c67;background:#132a35;color:#c1e4eb}
+@media(max-width:700px){
+ .watchManager{margin-top:12px}
+ .watchManager .paneltop{padding:15px;gap:12px}
+ .watchManager .muted{font-size:11px}
+ .watchManageToggle{padding:10px;font-size:12px}
+ .watchManagedSymbols{padding:12px;gap:7px}
+ .watchSavedChip{padding:10px;min-width:77px}
+ .watchManageBody{padding:14px 12px}
+ .watchAddForm>div{max-width:none}
+ .watchAddForm input{font-size:16px}
+ .watchFeedback{padding:0 12px 12px}
+}

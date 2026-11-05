@@ -1,7 +1,7 @@
 -- Apply ONLY to the OptionTrigger Pro Supabase project, AFTER approval and BEFORE releasing custom alerts.
 -- No changes to the original eight-symbol scanner, existing schedules or delivery journals.
 create table if not exists public.custom_alert_tickers (
- ticker text primary key check (ticker ~ '^[A-Z]{1,5}(\\.[A-Z])?$'
+ ticker text primary key check (ticker ~ '^[A-Z]{1,5}(\.[A-Z])?$'
   and ticker not in ('QQQ','SPY','TSLA','NVDA','AMD','AAPL','MSFT','GOOGL')),
  enabled boolean not null default false,
  updated_at timestamptz not null default now()

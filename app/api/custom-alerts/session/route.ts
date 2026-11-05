@@ -27,7 +27,7 @@ export async function POST(req:NextRequest){
 }
 export async function DELETE(req:NextRequest){
  if(!isSameOrigin(req))return NextResponse.json({error:'Forbidden origin'},{status:403,headers});
- await revokeCurrentDevice(req);
+ try{await revokeCurrentDevice(req);}catch{return NextResponse.json({error:'Could not revoke this trusted device. Try again.'},{status:503,headers});}
  const res=NextResponse.json({authenticated:false},{headers});
  clearOwnerCookies(res);
  return res;

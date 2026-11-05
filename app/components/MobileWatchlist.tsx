@@ -1,5 +1,6 @@
 'use client';
 import {statusDetails} from '@/lib/dashboard-mobile';
+import ExitWindowHint from './ExitWindowHint';
 import type {PremarketReference} from '@/lib/premarket-reference';
 type Signal={scannerEnabled?:boolean;premarketReference?:PremarketReference|null;ticker:string;status:string;callAbove:number|null;putBelow:number|null;price:number|null;vwap:number|null;volumeRatio:number|null;bias:string;reason:string;timestamp:string|null;fresh:boolean;feed:string};
 const money=(v:number|null)=>v===null?'—':'$'+v.toFixed(2);
@@ -20,6 +21,7 @@ export default function MobileWatchlist({signals,selected,onSelect}:{signals:Sig
     <span className="mobileCardLevels"><span><small>CALL ABOVE</small><b className="positive">{money(s.callAbove)}</b></span><span><small>PUT BELOW</small><b className="negative">{money(s.putBelow)}</b></span></span>
     <span className="mobileCardFoot"><span>VWAP {money(s.vwap)}</span><span>Vol {s.volumeRatio==null?'—':s.volumeRatio.toFixed(2)+'×'}</span></span>
     <span className="mobileCardReason">{description}</span>
+    {scanner&&s.status.startsWith('CONFIRMED')&&<ExitWindowHint timestamp={s.timestamp} status={s.status}/>}
    </button>;
   })}
  </div>;

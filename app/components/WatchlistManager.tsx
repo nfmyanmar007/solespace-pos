@@ -43,7 +43,7 @@ export default function WatchlistManager({selected,onSelect,onSavedChange,onAler
    <p className="muted">Add US stocks and ETFs without GitHub. Extra tickers start as <strong>RESEARCH ONLY</strong>. Owner-verified Telegram alerts can be enabled individually below.</p></div>
    <button type="button" className="watchManageToggle" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?'Close':'＋ Manage'}</button></div>
   <div className="watchManagedSymbols" aria-label="Select a saved chart symbol">
-   {saved.map(t=><button type="button" key={t} className={'watchSavedChip '+(selected===t?'active':'')} onClick={()=>onSelect(t)} aria-pressed={selected===t}>{t} <small>CHART ONLY</small></button>)}
+   {saved.map(t=><button type="button" key={t} className={'watchSavedChip '+(selected===t?'active':'')} onClick={()=>onSelect(t)} aria-pressed={selected===t}>{t} <small>CUSTOM</small></button>)}
    {!saved.length&&<span className="watchEmpty">No additional tickers yet. Tap Manage to add ORCL, META, or another active US stock.</span>}
   </div>
   {open&&<div className="watchManageBody">

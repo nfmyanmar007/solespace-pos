@@ -12,9 +12,14 @@ export function classifyScannerHealth(now:Date,runs:RunRecord[],marketState:stri
  const valid=runs.filter(r=>Number.isFinite(Date.parse(r.created_at))&&Date.parse(r.created_at)<=now.getTime()+60000&&r.signal_count>=0).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
  const lastRunAt=valid[0]?.created_at??null;
  const ageSeconds=lastRunAt?Math.max(0,Math.round((now.getTime()-Date.parse(lastRunAt))/1000)):null;
- const lastIntervalsSeconds=valid.slice(0,10).flatMap((r,i)=>i+1<valid.length?[Math.round((Date.parse(r.created_at)-Date.parse(valid[i+1].created_at))/1000)]:[]).filter(n=>n>=0);
+ // Compare cadence only within this trading day: overnight and weekend breaks are expected.
+ const nyDate=(date:Date)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+ const today=nyDate(now);
+ const todays=valid.filter(r=>nyDate(new Date(r.created_at))===today);
+ const lastIntervalsSeconds=todays.slice(0,10).flatMap((r,i)=>i+1<todays.length?[Math.round((Date.parse(r.created_at)-Date.parse(todays[i+1].created_at))/1000)]:[]).filter(n=>n>=0);
  const missedWindows=lastIntervalsSeconds.filter(seconds=>seconds>300).length;
  const base={lastRunAt,ageSeconds,regularSession,recentRuns:valid.length,missedWindows,lastIntervalsSeconds};
+ if(marketState==='CALENDAR UNAVAILABLE')return {...base,state:'UNKNOWN',reason:'Exchange calendar is unavailable; live session health cannot be verified.'};
  if(!regularSession)return {...base,state:'IDLE',reason:'Not in a verified regular-market session; scheduled scan freshness is not required now.'};
  if(ageSeconds===null)return {...base,state:'NO DATA',reason:'No scanner execution records are available during regular-market hours.'};
  if(ageSeconds>300)return {...base,state:'LATE',reason:'Last recorded scan is older than five minutes during regular-market hours.'};

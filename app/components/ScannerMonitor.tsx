@@ -1,7 +1,11 @@
 'use client';
 import {useEffect,useState} from 'react';
 type Health={state:'HEALTHY'|'LATE'|'IDLE'|'NO DATA'|'UNKNOWN';reason:string;lastRunAt:string|null;ageSeconds:number|null;recentRuns:number;missedWindows:number;regularSession:boolean};
-type Data={asOf:string;marketState:string;health:Health;deliveries:{sent:number;failed:number;pending:number;deliveryFailures:number;hasFailures:boolean};recentRuns:{at:string;marketState:string;signalCount:number;mode:string}[];configuration:string;note:string};
+type CustomDiagnostic={ticker:string;lastCheckedAt:string|null;outcome:string;signalStatus:string|null;confirmedLast15m:number;errorsLast15m:number};
+type Reliability={gaps:{verifiable:boolean;gaps:number;longestSeconds:number;regularRuns:number;lastRegularAt:string|null;stale:boolean};
+ telegram:{sent:number;failed:number;pending:number;stalePending:number;deliveryFailures:number;duplicatesPrevented:string;hasIncident:boolean};
+ custom:{access:'OWNER_ONLY'|'AVAILABLE'|'SETUP_REQUIRED'|'UNAVAILABLE';monitored:number|null;symbols:CustomDiagnostic[]}};
+type Data={reliability?:Reliability;asOf:string;marketState:string;health:Health;deliveries:{sent:number;failed:number;pending:number;deliveryFailures:number;hasFailures:boolean};recentRuns:{at:string;marketState:string;signalCount:number;mode:string}[];configuration:string;note:string};
 const time=(x:string)=>new Date(x).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit'});
 export default function ScannerMonitor(){
  const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);
@@ -32,6 +36,35 @@ export default function ScannerMonitor(){
      <div><small>DELIVERY ERROR EVENTS (24H)</small><strong className={data.deliveries.deliveryFailures?'monitorWarning':''}>{data.deliveries.deliveryFailures}</strong></div>
     </div>
     {data.deliveries.hasFailures&&<p className="monitorMessage monitorWarning" role="alert">Some delivery failures were recorded. Review the Telegram delivery journal before relying on alerts.</p>}
+    {data.reliability&&<>
+     <h3 className="monitorSubheading">V2.9 · Scanner gap diagnostics</h3>
+     <div className="monitorMetrics">
+      <div><small>VERIFIED SESSION GAPS &gt; 5 MIN</small><strong className={data.reliability.gaps.gaps?'monitorWarning':''}>{data.reliability.gaps.verifiable?data.reliability.gaps.gaps:'Not verified'}</strong></div>
+      <div><small>LONGEST RECORDED GAP</small><strong>{data.reliability.gaps.gaps?Math.ceil(data.reliability.gaps.longestSeconds/60)+' min':'—'}</strong></div>
+      <div><small>REGULAR-SESSION SCANS</small><strong>{data.reliability.gaps.verifiable?data.reliability.gaps.regularRuns:'—'}</strong></div>
+     </div>
+     {data.reliability.gaps.stale&&<p className="monitorMessage monitorWarning" role="alert">Scanner has not recorded a run in the last five minutes of this verified trading session.</p>}
+     <h3 className="monitorSubheading">Telegram delivery monitoring · Last 24 hours</h3>
+     <div className="monitorMetrics">
+      <div><small>SENT · TELEGRAM ACCEPTED</small><strong>{data.reliability.telegram.sent}</strong></div>
+      <div><small>FAILED</small><strong className={data.reliability.telegram.failed?'monitorWarning':''}>{data.reliability.telegram.failed}</strong></div>
+      <div><small>PENDING / STALE &gt; 5 MIN</small><strong className={data.reliability.telegram.stalePending?'monitorWarning':''}>{data.reliability.telegram.pending} / {data.reliability.telegram.stalePending}</strong></div>
+      <div><small>ERROR EVENTS</small><strong className={data.reliability.telegram.deliveryFailures?'monitorWarning':''}>{data.reliability.telegram.deliveryFailures}</strong></div>
+     </div>
+     {data.reliability.telegram.hasIncident&&<p className="monitorMessage monitorWarning" role="alert">Telegram delivery failures or stalled pending alerts were recorded. These need manual review; retries are not sent automatically to avoid duplicates.</p>}
+     <h3 className="monitorSubheading">Custom-stock diagnostics · Owner only</h3>
+     {data.reliability.custom.access==='OWNER_ONLY'?
+      <p className="monitorFootnote">Unlock Custom Stock Telegram alerts under Watchlist → Manage on this device to see ORCL and other personal ticker diagnostics here. Public Health checks never expose owner subscriptions.</p>:
+      data.reliability.custom.access==='SETUP_REQUIRED'?
+      <p className="monitorMessage monitorWarning">The V2.9 custom scan diagnostic table has not been installed yet. Existing scanning and alerts continue unchanged.</p>:
+      data.reliability.custom.access==='UNAVAILABLE'?
+      <p className="monitorMessage monitorWarning">Custom diagnostics are unavailable. This does not mean Telegram alerts failed.</p>:
+      <div className="monitorTableWrap"><table className="monitorTable"><thead><tr><th>Stock</th><th>Last checked (ET)</th><th>Evaluation</th><th>15m confirmed</th><th>15m errors</th></tr></thead><tbody>
+       {data.reliability.custom.symbols.map(d=><tr key={d.ticker}><td><strong>{d.ticker}</strong></td><td>{d.lastCheckedAt?time(d.lastCheckedAt):'No record'}</td><td><span className={['ERROR','STALE','NO_RECORD','NO_DATA'].includes(d.outcome)?'monitorWarning':''}>{d.outcome.replaceAll('_',' ')}</span>{d.signalStatus&&<small className="monitorCellSub">{d.signalStatus}</small>}</td><td>{d.confirmedLast15m}</td><td>{d.errorsLast15m}</td></tr>)}
+       {!data.reliability.custom.symbols.length&&<tr><td colSpan={5}>No custom stocks are enabled.</td></tr>}
+      </tbody></table></div>}
+     <p className="monitorFootnote">NOT CONFIRMED means a stock was evaluated but did not meet all entry conditions. NO RECORD and STALE mean monitoring evidence is missing, not that a valid signal was missed. Confirmation does not guarantee Telegram delivery.</p>
+    </>}
     <h3 className="monitorSubheading">Recent scanner executions</h3>
     <div className="monitorTableWrap"><table className="monitorTable"><thead><tr><th>Time (ET)</th><th>Session</th><th>Signals checked</th></tr></thead><tbody>
      {data.recentRuns.map((r,i)=><tr key={r.at+i}><td>{time(r.at)}</td><td>{r.marketState}</td><td>{r.signalCount}</td></tr>)}

@@ -1,8 +1,9 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {loadBars,evaluate,type Ticker} from '@/lib/engine';
-import {fetchTradingSession} from '@/lib/market-calendar';
+import {fetchTradingSession,sessionState} from '@/lib/market-calendar';
+import {getOrclPremarketReference} from '@/lib/premarket-reference';
 import {validateWatchSymbol} from '@/lib/asset-validator';
-import {normalizeCustomQuery,asChartOnlySignal,asScannerSignal} from '@/lib/unified-watchlist';
+import {normalizeCustomQuery,asChartOnlySignal,asScannerSignal,withPremarketReference} from '@/lib/unified-watchlist';
 import {getEnabledCustomAlerts} from '@/lib/custom-alerts';
 export const dynamic='force-dynamic';
 export const maxDuration=30;
@@ -25,7 +26,12 @@ export async function GET(req:NextRequest){
     if(!result.ok)return {ticker:symbol,status:'NO DATA',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:result.reason||'Symbol unavailable',timestamp:null,fresh:false,feed:'IEX',scannerEnabled:false};
     const bars=await loadBars(symbol as Ticker);
     const evaluated=evaluate(symbol as Ticker,bars,now,session);
-    return enabled.has(symbol)?asScannerSignal(evaluated):asChartOnlySignal(evaluated);
+    const display=enabled.has(symbol)?asScannerSignal(evaluated):asChartOnlySignal(evaluated);
+    // Only ORCL, only verified premarket, only if IEX has no price.
+    // Separate reference metadata never replaces signal.price, candle, levels, or status.
+    if(symbol==='ORCL'&&evaluated.price===null&&evaluated.status==='NO PREMARKET DATA'&&sessionState(now,session)==='PRE-MARKET')
+     return withPremarketReference(display,await getOrclPremarketReference(now,session));
+    return display;
    }catch{return {ticker:symbol,status:'NO DATA',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:'IEX feed unavailable for this custom stock',timestamp:null,fresh:false,feed:'IEX',scannerEnabled:false};}
   }));
   signals.push(...batch);

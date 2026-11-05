@@ -1,12 +1,11 @@
 'use client';
 import {statusDetails} from '@/lib/dashboard-mobile';
-import {isCore} from '@/lib/watchlist';
-type Signal={ticker:string;status:string;callAbove:number|null;putBelow:number|null;price:number|null;vwap:number|null;volumeRatio:number|null;bias:string;reason:string;timestamp:string|null;fresh:boolean;feed:string};
+type Signal={scannerEnabled?:boolean;ticker:string;status:string;callAbove:number|null;putBelow:number|null;price:number|null;vwap:number|null;volumeRatio:number|null;bias:string;reason:string;timestamp:string|null;fresh:boolean;feed:string};
 const money=(v:number|null)=>v===null?'—':'$'+v.toFixed(2);
 export default function MobileWatchlist({signals,selected,onSelect}:{signals:Signal[];selected:string;onSelect:(ticker:string)=>void}){
  return <div className="mobileCards" aria-label="Mobile stock trigger cards">
   {signals.map(s=>{
-   const detail=statusDetails(s.status),scanner=isCore(s.ticker);
+   const detail=statusDetails(s.status),scanner=s.scannerEnabled===true;
    const label=scanner?detail.label:s.status.startsWith('RESEARCH')?s.status:detail.label;
    const description=scanner?detail.description:s.status.startsWith('RESEARCH')?'Research setup passed current candle checks; Telegram alerts are NOT enabled.':detail.description+' · No Telegram alerts';
    return <button key={s.ticker} type="button" className={'mobileStockCard '+(selected===s.ticker?'isSelected':'')}

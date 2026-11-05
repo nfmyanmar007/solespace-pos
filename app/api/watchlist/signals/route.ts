@@ -2,7 +2,8 @@ import {NextRequest,NextResponse} from 'next/server';
 import {loadBars,evaluate,type Ticker} from '@/lib/engine';
 import {fetchTradingSession} from '@/lib/market-calendar';
 import {validateWatchSymbol} from '@/lib/asset-validator';
-import {normalizeCustomQuery,asChartOnlySignal} from '@/lib/unified-watchlist';
+import {normalizeCustomQuery,asChartOnlySignal,asScannerSignal} from '@/lib/unified-watchlist';
+import {getEnabledCustomAlerts} from '@/lib/custom-alerts';
 export const dynamic='force-dynamic';
 export const maxDuration=30;
 // Read-only personalized display; does NOT change scanner membership or Telegram delivery.
@@ -13,6 +14,8 @@ export async function GET(req:NextRequest){
  if(!process.env.ALPACA_API_KEY||!process.env.ALPACA_API_SECRET)
   return NextResponse.json({error:'Market feed unavailable'},{status:503});
  const now=new Date(),session=await fetchTradingSession(now);
+ // Read-only display: only server-approved owner opt-ins show scanner-enabled status.
+ const enabled=new Set(await getEnabledCustomAlerts().catch(()=>[] as string[]));
  const signals=[];
  // Bounded parallelism protects free-tier IEX data/API rate limits.
  for(let i=0;i<symbols.length;i+=3){
@@ -21,10 +24,11 @@ export async function GET(req:NextRequest){
     const result=await validateWatchSymbol(symbol);
     if(!result.ok)return {ticker:symbol,status:'NO DATA',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:result.reason||'Symbol unavailable',timestamp:null,fresh:false,feed:'IEX',scannerEnabled:false};
     const bars=await loadBars(symbol as Ticker);
-    return asChartOnlySignal(evaluate(symbol as Ticker,bars,now,session));
+    const evaluated=evaluate(symbol as Ticker,bars,now,session);
+    return enabled.has(symbol)?asScannerSignal(evaluated):asChartOnlySignal(evaluated);
    }catch{return {ticker:symbol,status:'NO DATA',callAbove:null,putBelow:null,price:null,vwap:null,volumeRatio:null,bias:'NEUTRAL',reason:'IEX feed unavailable for this custom stock',timestamp:null,fresh:false,feed:'IEX',scannerEnabled:false};}
   }));
   signals.push(...batch);
  }
- return NextResponse.json({signals,asOf:now.toISOString(),feed:'IEX',scannerScope:'CORE_ONLY'},{headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({signals,asOf:now.toISOString(),feed:'IEX',scannerScope:'CORE_AND_OWNER_OPT_IN'},{headers:{'Cache-Control':'no-store'}});
 }

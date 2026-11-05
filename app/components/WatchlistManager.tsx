@@ -1,8 +1,9 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {CORE_TICKERS,MAX_WATCHLIST,STORAGE_KEY,parseSavedWatchlist,canAddSymbol} from '@/lib/watchlist';
+import CustomAlertControls from './CustomAlertControls';
 type Validation={ok:boolean;symbol?:string;name?:string;reason?:string};
-export default function WatchlistManager({selected,onSelect,onSavedChange}:{selected:string;onSelect:(ticker:string)=>void;onSavedChange:(stocks:string[])=>void}){
+export default function WatchlistManager({selected,onSelect,onSavedChange,onAlertsChange}:{selected:string;onSelect:(ticker:string)=>void;onSavedChange:(stocks:string[])=>void;onAlertsChange:()=>void}){
  const [saved,setSaved]=useState<string[]>([]);
  const [ready,setReady]=useState(false);
  const [draft,setDraft]=useState('');
@@ -28,7 +29,7 @@ export default function WatchlistManager({selected,onSelect,onSavedChange}:{sele
    const res=await fetch('/api/watchlist/validate?ticker='+encodeURIComponent(candidate.symbol),{cache:'no-store'});
    const value=await res.json() as Validation;
    if(!res.ok||!value.ok){setFeedback(value.reason||'Ticker unavailable. Try again.');return;}
-   if(save([...saved,candidate.symbol])){setDraft('');setFeedback(candidate.symbol+' added for charts and indicators only — Telegram scanner unchanged.');onSelect(candidate.symbol);}
+   if(save([...saved,candidate.symbol])){setDraft('');setFeedback(candidate.symbol+' added to your chart watchlist. Telegram monitoring is OFF until you explicitly enable it.');onSelect(candidate.symbol);}
   }catch{setFeedback('Could not validate this ticker. No changes saved.');}
   finally{setBusy(false);}
  }
@@ -38,11 +39,11 @@ export default function WatchlistManager({selected,onSelect,onSavedChange}:{sele
   setFeedback(symbol+' removed from this browser watchlist. Scanner unchanged.');
  }
  return <section className="panel watchManager" aria-label="Manage chart watchlist">
-  <div className="paneltop"><div><h2>My Chart Watchlist <span className="watchCount">{CORE_TICKERS.length+saved.length}/{MAX_WATCHLIST}</span></h2>
-   <p className="muted">Add US stocks and ETFs without GitHub. Extra tickers are <strong>CHART ONLY</strong> — no Telegram scans or alert changes.</p></div>
+  <div className="paneltop"><div><h2>My Stock Watchlist <span className="watchCount">{CORE_TICKERS.length+saved.length}/{MAX_WATCHLIST}</span></h2>
+   <p className="muted">Add US stocks and ETFs without GitHub. Extra tickers start as <strong>RESEARCH ONLY</strong>. Owner-verified Telegram alerts can be enabled individually below.</p></div>
    <button type="button" className="watchManageToggle" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?'Close':'＋ Manage'}</button></div>
   <div className="watchManagedSymbols" aria-label="Select a saved chart symbol">
-   {saved.map(t=><button type="button" key={t} className={'watchSavedChip '+(selected===t?'active':'')} onClick={()=>onSelect(t)} aria-pressed={selected===t}>{t} <small>CHART ONLY</small></button>)}
+   {saved.map(t=><button type="button" key={t} className={'watchSavedChip '+(selected===t?'active':'')} onClick={()=>onSelect(t)} aria-pressed={selected===t}>{t} <small>CUSTOM</small></button>)}
    {!saved.length&&<span className="watchEmpty">No additional tickers yet. Tap Manage to add ORCL, META, or another active US stock.</span>}
   </div>
   {open&&<div className="watchManageBody">
@@ -50,8 +51,9 @@ export default function WatchlistManager({selected,onSelect,onSavedChange}:{sele
      <input id="watchTickerInput" autoComplete="off" maxLength={6} value={draft} onChange={e=>setDraft(e.target.value.toUpperCase())} placeholder="e.g. ORCL" disabled={!ready||busy} aria-describedby="watchNote"/>
      <button type="submit" disabled={!ready||busy||saved.length>=MAX_WATCHLIST-CORE_TICKERS.length}>{busy?'Checking…':'Add stock'}</button></div>
    </form>
-   <p id="watchNote" className="watchNote">Saved on this browser only, not synced across devices. The 8 original scanner stocks stay active. Custom tickers display chart-only opening-range levels and indicators, not confirmed alerts.</p>
+   <p id="watchNote" className="watchNote">Chart stocks are saved on this browser only. Telegram alert switches are saved centrally and may remain on after removing a chart stock. The original 8 monitored stocks never change.</p>
    {saved.length>0&&<div className="watchRemovalList">{saved.map(t=><div key={t}><strong>{t}</strong><button type="button" onClick={()=>remove(t)} aria-label={'Remove '+t+' from chart watchlist'}>Remove</button></div>)}</div>}
+   <CustomAlertControls symbols={saved} onChanged={onAlertsChange}/>
   </div>}
   {feedback&&<p className="watchFeedback" role="status">{feedback}</p>}
  </section>;

@@ -35,7 +35,7 @@ export default function SignalPerformance(){
   </div></div>
   {loading?<p className="alertHistoryEmpty">Measuring confirmed signals…</p>:error?<p className="alertHistoryEmpty" role="alert">{error}</p>:data&&<>
    <p className="perfIntro"><strong>Session {data.sessionDate}</strong> · {data.signals.length} recorded sent confirmations · Feed: {data.dataStatus==='AVAILABLE'?'IEX 1-minute candles':data.dataStatus.replaceAll('_',' ')}</p>
-   {data.feedFailures?.length>0&&<p role="status" className="perfWarning">IEX data unavailable for {data.feedFailures.join(', ')}. Their missing outcomes are not included as losses.</p>}
+   {(data.feedFailures?.length??0)>0&&<p role="status" className="perfWarning">IEX data unavailable for {(data.feedFailures??[]).join(', ')}. Their missing outcomes are not included as losses.</p>}
    {data.scorecard.length>0&&<div className="perfScoreGrid">{data.scorecard.map(s=><div className="perfScore" key={s.minutes}>
      <small>AFTER {s.minutes} MINUTES</small><strong>{s.measured?percent(s.averageDirectionalPct):'No measured data'}</strong>
      <span>{s.favorable} favorable · {s.unfavorable} unfavorable · {s.flat} flat</span>

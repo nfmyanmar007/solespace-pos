@@ -38,7 +38,10 @@ export async function ownerAuthenticated(req:NextRequest):Promise<boolean>{
 }
 export async function revokeCurrentDevice(req:NextRequest){
  const token=req.cookies.get(TRUSTED_COOKIE)?.value,db=ownerDb();
- if(db&&validTokenShape(token))await db.from('owner_trusted_devices').delete().eq('token_hash',hashToken(token));
+ if(db&&validTokenShape(token)){
+  const {error}=await db.from('owner_trusted_devices').delete().eq('token_hash',hashToken(token));
+  if(error)throw new Error('Cannot revoke trusted-device token');
+ }
 }
 export function webauthnOrigin(req:NextRequest):{rpID:string;origin:string}{
  // Never trust Host, Forwarded or a caller-supplied origin for verification.

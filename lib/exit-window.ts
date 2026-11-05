@@ -15,5 +15,5 @@ export function exitWindow(confirmedAt:string|null|undefined,now:Date):ExitWindo
   phase:now.getTime()<review?'MONITOR':now.getTime()<timebox?'REVIEW EXIT':'TIMEBOX ELAPSED'};
 }
 export function confirmedExitWindow(status:string,timestamp:string|null|undefined,now:Date):ExitWindow|null{
- return status==='CONFIRMED CALL'||status==='CONFIRMED PUT'?exitWindow(timestamp,now):null;
+ return (status==='CONFIRMED CALL'||status==='CONFIRMED PUT')&&timestamp&&Number.isFinite(Date.parse(timestamp))?exitWindow(new Date(Date.parse(timestamp)+60000).toISOString(),now):null;
 }

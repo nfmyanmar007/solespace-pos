@@ -18,13 +18,15 @@ test('missing regular scans after 5 minutes is stale; no fabricated market on un
  assert.equal(sessionGapSummary(now,[],null).verifiable,false);
  assert.equal(sessionGapSummary(now,[],{...session,isTradingDay:false}).verifiable,false);
  const after=new Date('2026-11-05T22:00:00Z');
- assert.equal(sessionGapSummary(after,[run(68)],session).stale,true);
+ assert.equal(sessionGapSummary(after,[run(68)],session).stale,false); // No live freshness requirement once the market is closed.
 });
 test('shortened Alpaca trading session prevents false after-close stale when fully scanned',()=>{
  const t=new Date('2026-11-05T19:31:00Z'); // 2:31pm ET
  const early={...session,closeMinute:870}; // 2:30pm ET
  const d=sessionGapSummary(t,[{created_at:'2026-11-05T19:28:00Z',market_state:'REGULAR SESSION'}],early);
  assert.equal(d.stale,false);
+ const hoursLater=sessionGapSummary(new Date('2026-11-05T20:00:00Z'),[{created_at:'2026-11-05T19:28:00Z',market_state:'REGULAR SESSION'}],early);
+ assert.equal(hoursLater.stale,false); // Closing at 2:30 ET means no scans are expected at 3:00 ET.
 });
 test('Telegram distinguishes sent, failed, stuck pending and no alerts from delivery success',()=>{
  const fresh=new Date(now.getTime()-60000).toISOString(),stuck=new Date(now.getTime()-3600000).toISOString();

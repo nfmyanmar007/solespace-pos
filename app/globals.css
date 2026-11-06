@@ -298,3 +298,26 @@
 .perfMuted{color:#9eb0c3}
 .perfWarning{margin:10px 19px;padding:12px;border:1px solid #705c41;background:#302637;color:#f8c4aa;font-size:12px;border-radius:8px}
 @media(max-width:700px){.perfScoreGrid{grid-template-columns:1fr;gap:8px;margin:10px 11px 15px}.perfScore{padding:13px}.perfScore>strong{font-size:20px}.perfIntro{margin:12px 11px}.perfWarning{margin:10px 11px}}
+
+
+/* V3.1 historical analytics — read-only responsive scorecards */
+.historicalPerformance{margin-top:20px}
+.historicalPerformance .paneltop{align-items:center;gap:14px;flex-wrap:wrap}
+.historyPeriods{display:flex;gap:7px;flex-wrap:wrap}
+.historyPeriods button{cursor:pointer;background:#182c3c;border:1px solid #35495c;color:#bbcede;padding:10px 13px;border-radius:8px;font-weight:750;font-size:12px}
+.historyPeriods button.active{border-color:#50ccaa;background:#1d554a;color:#b4fbe4}
+.historyPeriods button:disabled{opacity:.65;cursor:wait}
+.historyPeriods button:focus-visible{outline:2px solid #8fffcf;outline-offset:2px}
+.historyWarning{margin:12px 22px;padding:12px 14px;border:1px solid #926c36;background:#3e3126;color:#ffe0a9;border-radius:8px;line-height:1.5;font-size:12px}
+.historyMeta{margin:12px 22px;color:#a9bdce;line-height:1.6;font-size:11px}
+.historyTables{padding:15px 20px 20px;display:grid;gap:22px}
+.historyTables h3{font-size:14px;color:#e4f4fa;margin:5px 0 11px}
+.historyTables .monitorTableWrap{overflow-x:auto}
+.historyTables td,.historyTables th{white-space:nowrap}
+@media(max-width:700px){
+ .historyPeriods{padding:0;width:100%}
+ .historyPeriods button{flex:1}
+ .historyTables{padding:12px;gap:17px}
+ .historyWarning,.historyMeta{margin:10px 12px}
+ .historicalPerformance{margin-top:12px}
+}

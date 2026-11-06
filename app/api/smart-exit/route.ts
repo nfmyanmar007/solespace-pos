@@ -37,7 +37,7 @@ async function build():Promise<Record<string,unknown>>{
  };
  const rows=((stored.data||[]) as SentSignal[]).filter(s=>validTicker(s.ticker)&&
   (s.direction==='CALL'||s.direction==='PUT')&&s.sent_at&&Number.isFinite(Date.parse(s.sent_at))&&
-  Date.parse(s.sent_at)<=now.getTime()&&now.getTime()-Date.parse(s.sent_at)<15*60_000);
+  Date.parse(s.sent_at)<=now.getTime()&&now.getTime()-Date.parse(s.sent_at)<30*60_000);
  const symbols=[...new Set(rows.map(s=>s.ticker))].slice(0,12);
  const prices=new Map<string,Bar[]|null>();
  for(let i=0;i<symbols.length;i+=4){

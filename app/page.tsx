@@ -5,6 +5,7 @@ import ExitWindowHint from './components/ExitWindowHint';
 import MobileWatchlist from './components/MobileWatchlist';
 import AlertHistory from './components/AlertHistory';
 import SignalPerformance from './components/SignalPerformance';
+import HistoricalPerformance from './components/HistoricalPerformance';
 import ScannerMonitor from './components/ScannerMonitor';
 import WatchlistManager from './components/WatchlistManager';
 import {CORE_TICKERS} from '@/lib/watchlist';
@@ -69,6 +70,7 @@ export default function Home(){
   {activeTab==='alerts'&&<section id="dashboard-alerts" aria-label="Telegram alert history" className="dashboardTabContent">
   <AlertHistory onSelectTicker={openChart}/>
   <SignalPerformance/>
+  <HistoricalPerformance/>
   <div className="notice" style={{marginTop:20,background:'#102925',borderColor:'#285345',color:'#b4e8d5',alignItems:'flex-start'}}>
     <strong style={{color:'#55e3b5'}}>AUTOMATED ALERTS</strong>
     <span>Telegram alert setup is available in this release. The active Supabase scheduler is configured for checks every 2 minutes on weekdays; actual timing may vary. Exchange holidays and early closes are checked from the Alpaca calendar. Calendar or data failures prevent confirmation. Only completed, fresh, confirmed CALL/PUT signals during regular hours qualify. One alert per ticker and direction per NY trading day. Premarket preliminary levels never alert. The app cannot currently confirm options bid/ask or contract prices.</span>

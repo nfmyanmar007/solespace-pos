@@ -4,7 +4,7 @@ import {allowPerformanceRead,shortLivedServerCache} from '@/lib/performance-read
 import {createClient} from '@supabase/supabase-js';
 import {loadBars,type Bar,type Ticker} from '@/lib/engine';
 import {fetchTradingSession} from '@/lib/market-calendar';
-import {measureSignal,summarizeMeasurements,type SentSignal,type SignalMeasurement} from '@/lib/signal-performance';
+import {measureSignal,summarizeMeasurements,verifyReferenceCandle,type SentSignal,type SignalMeasurement} from '@/lib/signal-performance';
 import {todayNY} from '@/lib/dashboard-mobile';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -55,6 +55,11 @@ async function buildPerformancePayload():Promise<Record<string,unknown>>{
    if(!candles.has(item.ticker))continue;
    const measured=measureSignal(item,candles.get(item.ticker)||[],now,calendar);
    if(measured){
+    const bars=candles.get(item.ticker);
+    if(bars){
+     measured.referenceStatus=verifyReferenceCandle(item,bars,now,calendar);
+     if(measured.referenceStatus!=='MATCHED')measured.horizons=measured.horizons.map(h=>h.status==='MEASURED'||h.status==='MISSING_BAR'?{...h,status:'INVALID' as const,price:null,stockMovePct:null,directionalMovePct:null,barAt:null}:h);
+    }
     // Data feed failure is explicitly distinguished from missing individual bars.
     if(candles.get(item.ticker)===null)measured.horizons=measured.horizons.map(h=>h.status==='MISSING_BAR'?{...h,status:'INVALID' as const}:h);
     signals.push(measured);

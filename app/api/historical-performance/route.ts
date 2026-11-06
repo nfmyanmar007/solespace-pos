@@ -50,8 +50,8 @@ async function buildHistoricalPayload(days:7|30|90):Promise<Record<string,unknow
  const sessions=await historicalSessions(start,end);
  const rows:ReturnType<typeof decorateHistoricalMeasurement>[]=[],feedFailures:string[]=[];
  let calendarSkipped=0,unmeasurable=0,referenceMismatch=0;
- for(let i=0;i<selectedGroups.length;i+=4){
-  const result=await Promise.all(selectedGroups.slice(i,i+4).map(async group=>{
+ for(let i=0;i<selectedGroups.length;i+=10){
+  const result=await Promise.all(selectedGroups.slice(i,i+10).map(async group=>{
    const session=sessions.get(group.date);
    if(!session)return {group,session:null,bars:null};
    try{return {group,session,bars:await historicalIexBars(group)};}

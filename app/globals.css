@@ -321,3 +321,23 @@
  .historyWarning,.historyMeta{margin:10px 12px}
  .historicalPerformance{margin-top:12px}
 }
+
+/* V3.2 quality research display */
+.qualitySection{border-top:1px solid #334454;padding:20px 20px 23px;margin-top:16px}
+.qualityHeading h3{margin:0 0 7px;color:#e6f4fa;font-size:18px}
+.qualityHeading p{font-size:12px;line-height:1.5}
+.qualityBands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 22px}
+.qualityBand{display:flex;flex-direction:column;gap:8px;background:#152a36;border:1px solid #34515e;padding:14px;border-radius:10px;min-width:0}
+.qualityBand strong{color:#7ee5c6;font-size:18px}
+.qualityBand span{color:#d2e2ed;font-size:12px}
+.qualityBand small{color:#94aebe;line-height:1.6;font-size:11px}
+.qualityDimensions{display:grid;gap:24px}
+.qualityDimension h4,.qualityEvents h4{color:#ecf4fa;margin:0 0 8px;font-size:14px}
+.qualityDimension .historyMeta{margin:0 0 10px}
+.qualityDimension .monitorTableWrap{overflow-x:auto}
+.qualityDimension th,.qualityDimension td{white-space:nowrap}
+.qualityDimension td small{color:#94aebe}
+.qualityEvents{background:#182534;border:1px solid #3a4858;padding:16px;margin-top:20px;border-radius:10px;color:#b9c8d8;font-size:12px;line-height:1.65}
+.qualityEvents p{margin:7px 0 9px}
+.qualityEvents small{color:#92a8bb}
+@media(max-width:700px){.qualitySection{padding:15px 11px}.qualityBands{grid-template-columns:1fr}.qualityBand strong{font-size:17px}}

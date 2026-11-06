@@ -50,7 +50,7 @@ test('stale IEX candle fails closed and is not falsely reported as actionable',(
  assert.equal(result.lastPrice,null);
 });
 test('5-min review and 15-min timebox use Telegram accepted time, not candle timestamp',()=>{
- const five=exitAdvisory(signal(),[bar(0,100),bar(2,100),bar(6,100)],at(6,25),session);
+ const five=exitAdvisory(signal(),[bar(0,100),bar(2,100),bar(6,100)],at(7,10),session);
  assert.ok(five.flags.includes('TIME_REVIEW'));
  const fifteen=exitAdvisory(signal(),[],at(17),session);
  assert.equal(fifteen.status,'TIMEBOX_ELAPSED');

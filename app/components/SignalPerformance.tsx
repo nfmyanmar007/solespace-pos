@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 type Horizon={minutes:5|10|15;status:'MEASURED'|'PENDING'|'MISSING_BAR'|'OUTSIDE_SESSION'|'INVALID';barAt:string|null;price:number|null;stockMovePct:number|null;directionalMovePct:number|null};
-type Signal={id:number;ticker:string;direction:'CALL'|'PUT';entryPrice:number;entryAt:string;sentAt:string|null;horizons:Horizon[]};
+type Signal={id:number;ticker:string;direction:'CALL'|'PUT';entryPrice:number;entryAt:string;sentAt:string|null;deliveryDelaySeconds:number;referenceStatus?:string;horizons:Horizon[]};
 type Summary={minutes:5|10|15;measured:number;favorable:number;unfavorable:number;flat:number;missing:number;pending:number;outsideSession:number;averageDirectionalPct:number|null};
 type Data={sessionDate:string;asOf:string;dataStatus:string;feedFailures?:string[];signals:Signal[];scorecard:Summary[];note:string};
 const money=(v:number|null)=>v===null?'—':'$'+v.toFixed(2);
@@ -21,17 +21,19 @@ export default function SignalPerformance(){
   const refresh=async()=>{
    try{
     const response=await fetch('/api/signal-performance',{cache:'no-store'});
+    if(response.status===401)throw Error('Unlock owner access under Watchlist → Manage, then return to Alerts.');
+    if(response.status===429)throw Error('Too many requests. Retry in one minute.');
     if(!response.ok)throw Error('Performance feed unavailable');
     const result=await response.json() as Data;
     if(active){setData(result);setError('');setLoading(false);}
-   }catch{if(active){setError('Performance scorecard is temporarily unavailable. No results can be verified.');setLoading(false);}}
+   }catch(e){if(active){setError(e instanceof Error&&/Unlock owner|Too many requests/.test(e.message)?e.message:'Performance scorecard is temporarily unavailable. No results can be verified.');setLoading(false);}}
   };
   refresh();const timer=window.setInterval(refresh,120000);
   return()=>{active=false;window.clearInterval(timer);};
  },[]);
  return <section className="panel signalPerformance" aria-label="V3.0 stock signal performance">
   <div className="paneltop"><div><h2>V3.0 · Signal Performance Tracker</h2>
-   <p className="muted">Measured at +5, +10 and +15 minutes after each confirmed IEX candle · New York time · Updates every 2 minutes</p>
+   <p className="muted">Five, ten and fifteen minutes after the confirmation candle CLOSE (not the Telegram delivery or an executed trade) · ET · Updates every 2 minutes</p>
   </div></div>
   {loading?<p className="alertHistoryEmpty">Measuring confirmed signals…</p>:error?<p className="alertHistoryEmpty" role="alert">{error}</p>:data&&<>
    <p className="perfIntro"><strong>Session {data.sessionDate}</strong> · {data.signals.length} recorded sent confirmations · Feed: {data.dataStatus==='AVAILABLE'?'IEX 1-minute candles':data.dataStatus.replaceAll('_',' ')}</p>
@@ -41,8 +43,8 @@ export default function SignalPerformance(){
      <span>{s.favorable} favorable · {s.unfavorable} unfavorable · {s.flat} flat</span>
      <small>{s.measured} measured · {s.pending} pending · {s.missing} missing · {s.outsideSession} outside session</small>
     </div>)}</div>}
-   <div className="monitorTableWrap"><table className="monitorTable perfTable"><thead><tr><th>Confirmed stock</th><th>CALL / PUT</th><th>Entry reference</th><th>+5m</th><th>+10m</th><th>+15m</th></tr></thead><tbody>
-     {data.signals.map(s=><tr key={s.id}><td><strong>{s.ticker}</strong><small className="perfDetail">{time(s.entryAt)} ET</small></td><td>{s.direction}</td><td>{money(s.entryPrice)}</td>
+   <div className="monitorTableWrap"><table className="monitorTable perfTable"><thead><tr><th>Confirmed stock</th><th>CALL / PUT</th><th>IEX reference close</th><th>+5m</th><th>+10m</th><th>+15m</th></tr></thead><tbody>
+     {data.signals.map(s=><tr key={s.id}><td><strong>{s.ticker}</strong><small className="perfDetail">Confirmation close {time(s.entryAt)} ET{ s.sentAt&&<> · Telegram accepted {time(s.sentAt)} ET ({s.deliveryDelaySeconds>=0?'+':''}{s.deliveryDelaySeconds}s)</>}{s.referenceStatus&&s.referenceStatus!=='MATCHED'&&<span className="monitorWarning"> · IEX reference not verified: {s.referenceStatus.replaceAll('_',' ').toLowerCase()}</span>}</small></td><td>{s.direction}</td><td>{money(s.entryPrice)}</td>
       {[5,10,15].map(m=><td key={m}>{outcome(s.horizons.find(h=>h.minutes===m)!)}</td>)}</tr>)}
      {!data.signals.length&&<tr><td colSpan={6}>No sent A+ confirmation records with measurable IEX data today. No performance result is assumed.</td></tr>}
     </tbody></table></div>

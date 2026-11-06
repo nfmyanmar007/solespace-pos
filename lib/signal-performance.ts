@@ -9,7 +9,8 @@ export type Horizon=typeof HORIZONS[number];
 export type ResultStatus='MEASURED'|'PENDING'|'MISSING_BAR'|'OUTSIDE_SESSION'|'INVALID';
 export type HorizonResult={minutes:Horizon;status:ResultStatus;barAt:string|null;price:number|null;stockMovePct:number|null;directionalMovePct:number|null};
 export type SentSignal={id:number;session_date:string;ticker:string;direction:string;price:number;bar_timestamp:string;sent_at:string|null;status:string};
-export type SignalMeasurement={id:number;ticker:string;direction:'CALL'|'PUT';entryPrice:number;confirmationBarAt:string;entryAt:string;sentAt:string|null;horizons:HorizonResult[]};
+export type SignalMeasurement={id:number;ticker:string;direction:'CALL'|'PUT';entryPrice:number;confirmationBarAt:string;entryAt:string;sentAt:string|null;deliveryDelaySeconds:number;referenceStatus?:ReferenceStatus;horizons:HorizonResult[]};
+export type ReferenceStatus='MATCHED'|'REFERENCE_BAR_MISSING'|'PRICE_MISMATCH';
 const round=(v:number)=>Math.round(v*10000)/10000;
 const day=(d:Date)=>easternClock(d).date;
 const okBar=(b:Bar,now:Date,session:SessionWindow)=>{
@@ -28,12 +29,13 @@ export function measureSignal(s:SentSignal,bars:Bar[],now:Date,session:SessionWi
   ||day(new Date(t))!==s.session_date||s.session_date!==session.date||day(now)!==session.date)return null;
  const candle=easternClock(new Date(t)).minute;
  if(candle<session.openMinute||candle>=session.closeMinute||t+60000>now.getTime())return null;
- const unique=new Map<number,Bar>();
+ const unique=new Map<number,Bar>(),duplicates=new Set<number>();
  for(const b of bars){
   if(!okBar(b,now,session))continue;
   const ts=Date.parse(b.t);
+  if(duplicates.has(ts))continue;
   if(!unique.has(ts))unique.set(ts,b);
-  else unique.delete(ts); // duplicated candle = ambiguous; never score
+  else{unique.delete(ts);duplicates.add(ts);} // any duplicate fails closed
  }
  const horizons=HORIZONS.map(minutes=>{
   const target=t+minutes*60000;
@@ -49,7 +51,7 @@ export function measureSignal(s:SentSignal,bars:Bar[],now:Date,session:SessionWi
    directionalMovePct:s.direction==='CALL'?stockMovePct:-stockMovePct};
  });
  return {id:s.id,ticker:s.ticker,direction:s.direction,entryPrice:s.price,confirmationBarAt:s.bar_timestamp,
-  entryAt:new Date(t+60000).toISOString(),sentAt:s.sent_at,horizons};
+  entryAt:new Date(t+60000).toISOString(),sentAt:s.sent_at,deliveryDelaySeconds:Math.round((sent-(t+60000))/1000),horizons};
 }
 export type MetricSummary={minutes:Horizon;measured:number;favorable:number;unfavorable:number;flat:number;missing:number;pending:number;outsideSession:number;averageDirectionalPct:number|null};
 export function summarizeMeasurements(rows:SignalMeasurement[]):MetricSummary[]{
@@ -64,4 +66,15 @@ export function summarizeMeasurements(rows:SignalMeasurement[]):MetricSummary[]{
    outsideSession:observations.filter(h=>h.status==='OUTSIDE_SESSION').length,
    averageDirectionalPct:values.length?round(values.reduce((a,b)=>a+b,0)/values.length):null};
  });
+}
+
+// A second check against the independently fetched historical IEX minute bar.
+// This is same-feed source reconciliation, NOT independent SIP/market-wide verification.
+// An unverified entry price must never be silently scored as a win or loss.
+export function verifyReferenceCandle(s:SentSignal,bars:Bar[],now:Date,session:SessionWindow):ReferenceStatus{
+ const ts=Date.parse(s.bar_timestamp);
+ const matched=bars.filter(b=>Date.parse(b.t)===ts&&okBar(b,now,session));
+ if(matched.length!==1)return 'REFERENCE_BAR_MISSING';
+ const recorded=Number(s.price);
+ return Number.isFinite(recorded)&&recorded>0&&Math.abs(matched[0].c-recorded)<=0.011?'MATCHED':'PRICE_MISMATCH';
 }

@@ -14,10 +14,12 @@ export default function AlertHistory({onSelectTicker}:{onSelectTicker:(ticker:st
   async function load(){
    try{
     const response=await fetch('/api/alert-history',{cache:'no-store'});
+    if(response.status===401)throw new Error('Unlock owner access under Watchlist → Manage to view sent alerts.');
+    if(response.status===429)throw new Error('Too many requests. Retry in one minute.');
     if(!response.ok)throw new Error('History unavailable');
     const result=await response.json() as History;
     if(mounted){setHistory(result);setError('');setLoading(false);}
-   }catch{if(mounted){setError('Today’s delivery history is temporarily unavailable.');setLoading(false);}}
+   }catch(e){if(mounted){setError(e instanceof Error&&/Unlock owner|Too many requests/.test(e.message)?e.message:'Today’s delivery history is temporarily unavailable.');setLoading(false);}}
   }
   load();
   const timer=globalThis.setInterval(load,60000);
@@ -25,7 +27,7 @@ export default function AlertHistory({onSelectTicker}:{onSelectTicker:(ticker:st
  },[]);
  return <section className="panel todayAlerts" aria-label="Today's delivered Telegram alerts">
   <div className="paneltop"><div><h2>Today’s confirmed alerts <span className="alertHistoryCount">{history?.alerts.length??'—'}</span></h2>
-  <p className="muted">Messages recorded as sent to Telegram today (Eastern Time). Exit times are example review reminders, not confirmed sell signals.</p></div></div>
+  <p className="muted">Owner-only records accepted by Telegram today (Eastern Time). Exit times are example review reminders, not confirmed sell signals.</p></div></div>
   {loading?<p className="alertHistoryEmpty">Loading alert history…</p>:
    error?<p role="status" className="alertHistoryEmpty">{error}</p>:
    history?.alerts.length?<div className="alertHistoryGrid">{history.alerts.map(a=><button type="button" className="historyItem" key={a.ticker+a.direction+a.barTimestamp}

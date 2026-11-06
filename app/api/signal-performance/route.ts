@@ -1,17 +1,28 @@
-import {NextResponse} from 'next/server';
+import {NextRequest,NextResponse} from 'next/server';
+import {ownerAuthenticated} from '@/lib/owner-security';
+import {allowPerformanceRead,shortLivedServerCache} from '@/lib/performance-read-guard';
 import {createClient} from '@supabase/supabase-js';
 import {loadBars,type Bar,type Ticker} from '@/lib/engine';
 import {fetchTradingSession} from '@/lib/market-calendar';
-import {measureSignal,summarizeMeasurements,type SentSignal,type SignalMeasurement} from '@/lib/signal-performance';
+import {measureSignal,summarizeMeasurements,verifyReferenceCandle,type SentSignal,type SignalMeasurement} from '@/lib/signal-performance';
 import {todayNY} from '@/lib/dashboard-mobile';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
-const headers={'Cache-Control':'no-store, max-age=0'};
+const headers={'Cache-Control':'private, no-store, max-age=0'};
+const cached=shortLivedServerCache<Record<string,unknown>>(30_000);
 const tickerOk=(value:string)=>/^[A-Z]{1,5}(\.[A-Z])?$/.test(value);
-export async function GET(){
+export async function GET(req:NextRequest){
+ if(!await ownerAuthenticated(req))return NextResponse.json({error:'Owner session required'},{status:401,headers});
+ if(!allowPerformanceRead())return NextResponse.json({error:'Too many performance requests; retry in one minute'},{status:429,headers:{...headers,'Retry-After':'60'}});
+ try{
+  const result=await cached.get(buildPerformancePayload);
+  return NextResponse.json(result,{headers});
+ }catch{return NextResponse.json({error:'Performance measurement temporarily unavailable'},{status:503,headers});}
+}
+async function buildPerformancePayload():Promise<Record<string,unknown>>{
  const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key||!process.env.ALPACA_API_KEY||!process.env.ALPACA_API_SECRET)
-  return NextResponse.json({error:'Performance feed unavailable'},{status:503,headers});
+  throw Error('Performance feed unavailable');
  const now=new Date(),sessionDate=todayNY(now);
  try{
   const db=createClient(url,key,{auth:{persistSession:false}});
@@ -22,8 +33,8 @@ export async function GET(){
   ]);
   if(stored.error)throw Error('Signal journal unavailable');
   if(!calendar||calendar.source!=='ALPACA'||!calendar.isTradingDay){
-   return NextResponse.json({sessionDate,asOf:now.toISOString(),feed:'IEX 1Min',dataStatus:'CALENDAR_UNAVAILABLE',
-    signals:[],scorecard:[],note:'No historical performance is inferred without a verified trading calendar.'},{headers});
+   return {sessionDate,asOf:now.toISOString(),feed:'IEX 1Min',dataStatus:'CALENDAR_UNAVAILABLE',
+    signals:[],scorecard:[],note:'No historical performance is inferred without a verified trading calendar.'};
   }
   const data=(stored.data||[]) as SentSignal[];
   // Only completed, sent confirmations; never include pending/failed or invented rows.
@@ -44,16 +55,20 @@ export async function GET(){
    if(!candles.has(item.ticker))continue;
    const measured=measureSignal(item,candles.get(item.ticker)||[],now,calendar);
    if(measured){
+    const bars=candles.get(item.ticker);
+    if(bars){
+     measured.referenceStatus=verifyReferenceCandle(item,bars,now,calendar);
+     if(measured.referenceStatus!=='MATCHED')measured.horizons=measured.horizons.map(h=>h.status==='MEASURED'||h.status==='MISSING_BAR'?{...h,status:'INVALID' as const,price:null,stockMovePct:null,directionalMovePct:null,barAt:null}:h);
+    }
     // Data feed failure is explicitly distinguished from missing individual bars.
     if(candles.get(item.ticker)===null)measured.horizons=measured.horizons.map(h=>h.status==='MISSING_BAR'?{...h,status:'INVALID' as const}:h);
     signals.push(measured);
    }
   }
-  return NextResponse.json({sessionDate,asOf:now.toISOString(),feed:'Alpaca IEX 1Min',dataStatus:feedFailures.length?'PARTIAL_FEED_ERROR':'AVAILABLE',
+  return {sessionDate,asOf:now.toISOString(),feed:'Alpaca IEX 1Min',dataStatus:feedFailures.length?'PARTIAL_FEED_ERROR':'AVAILABLE',
    feedFailures,signals,scorecard:summarizeMeasurements(signals),
-   note:'Underlying stock movements only, not options P&L. Reference is the IEX observed confirmation bar close; each horizon needs an exact completed IEX minute candle. Missing and unfinished horizons are excluded from averages. No prices are extrapolated. Research only.'},
-   {headers});
+   note:'Underlying stock movements only, not options P&L. Reference is the IEX observed confirmation bar close; each horizon needs an exact completed IEX minute candle. Missing and unfinished horizons are excluded from averages. No prices are extrapolated. Research only.'};
  }catch{
-  return NextResponse.json({error:'Performance measurement temporarily unavailable'},{status:503,headers});
+  throw Error('Performance source unavailable');
  }
 }

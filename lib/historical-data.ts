@@ -28,7 +28,7 @@ export async function historicalSessions(from:string,to:string):Promise<Map<stri
  if(!key||!secret)throw Error('Market calendar credentials unavailable');
  const url=new URL('https://paper-api.alpaca.markets/v2/calendar');
  url.searchParams.set('start',from);url.searchParams.set('end',to);
- const res=await fetch(url,{headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret},cache:'no-store',signal:AbortSignal.timeout(12000)});
+ const res=await fetch(url,{headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret},cache:'no-store',signal:AbortSignal.timeout(6500)});
  if(!res.ok)throw Error('Verified historical calendar unavailable');
  const rows=await res.json() as {date:string;open:string;close:string}[];
  if(!Array.isArray(rows))throw Error('Invalid Alpaca calendar');

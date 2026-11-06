@@ -341,3 +341,16 @@
 .qualityEvents p{margin:7px 0 9px}
 .qualityEvents small{color:#92a8bb}
 @media(max-width:700px){.qualitySection{padding:15px 11px}.qualityBands{grid-template-columns:1fr}.qualityBand strong{font-size:17px}}
+
+
+/* V3.3 informational post-confirmation exit-review cards */
+.smartExitMonitor{margin-top:20px}
+.smartExitGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:18px}
+.smartExitCard{background:#142535;border:1px solid #31485a;border-radius:11px;padding:15px;min-width:0}
+.smartExitHeading{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;color:#ddecf5}
+.smartExitHeading strong{font-size:15px}
+.smartExitState{font-size:10px;font-weight:850;letter-spacing:.5px;padding:6px 9px;background:#233a42;color:#a1d1d7;border:1px solid #3c6472;border-radius:7px}
+.smartExitState.smartExitReview{background:#4d3828;color:#ffdbad;border-color:#805d3c}
+.smartExitDetails{font-size:11px;color:#a8bdcd;line-height:1.55;margin-top:11px}
+.smartExitCard ul{margin:10px 0;padding-left:18px;color:#f5d6a4;font-size:11px;line-height:1.6}
+@media(max-width:700px){.smartExitMonitor{margin-top:12px}.smartExitGrid{grid-template-columns:1fr;padding:12px}}

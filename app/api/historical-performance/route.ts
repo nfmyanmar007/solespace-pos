@@ -5,7 +5,8 @@ import {allowPerformanceRead,shortLivedServerCache} from '@/lib/performance-read
 import {todayNY} from '@/lib/dashboard-mobile';
 import {historyStart,historicalAggregate,decorateHistoricalMeasurement} from '@/lib/historical-performance';
 import {historicalQueryDays,validHistoricalSignal,historyPairs,historicalSessions,historicalIexBars,MAX_HISTORY_PAIRS} from '@/lib/historical-data';
-import {measureSignal,verifyReferenceCandle,type SentSignal,type SignalMeasurement} from '@/lib/signal-performance';
+import {measureSignal,verifyReferenceCandle,type SentSignal} from '@/lib/signal-performance';
+import {signalQuality,metadataKey,type SignalJournalMeta} from '@/lib/signal-quality';
 
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -77,13 +78,42 @@ async function buildHistoricalPayload(days:7|30|90):Promise<Record<string,unknow
    }
   }
  }
- const coverageIncomplete=recordsTruncated||groupsTruncated||skippedInvalid>0||calendarSkipped>0||unmeasurable>0||feedFailures.length>0||referenceMismatch>0;
+ // Fetch original scanner metadata separately; never substitute today's VWAP or volume.
+ // Query remains owner-only, bounded, and untrusted fields are validated by signalQuality.
+ const journal=await db.from('signal_events')
+  .select('session_date,ticker,direction,bar_timestamp,observed_price,vwap,volume_ratio,feed')
+  .gte('session_date',start).lte('session_date',end)
+  .order('session_date',{ascending:false}).order('id',{ascending:false}).limit(1001);
+ const journalUnavailable=!!journal.error;
+ const journalRows=(journal.data||[]) as Record<string,unknown>[];
+ const journalTruncated=journalRows.length>1000;
+ const lookup=new Map<string,SignalJournalMeta|null>();
+ for(const source of journalRows.slice(0,1000)){
+  const meta:SignalJournalMeta={
+   session_date:String(source.session_date||''),ticker:String(source.ticker||''),
+   direction:String(source.direction||''),bar_timestamp:String(source.bar_timestamp||''),
+   observed_price:source.observed_price===null?null:Number(source.observed_price),
+   vwap:source.vwap===null?null:Number(source.vwap),
+   volume_ratio:source.volume_ratio===null?null:Number(source.volume_ratio),
+   feed:typeof source.feed==='string'?source.feed:null
+  };
+  const key=metadataKey(meta);
+  if(!key)continue;
+  if(lookup.has(key))lookup.set(key,null); // ambiguity fails closed
+  else lookup.set(key,meta);
+ }
+ const coverageIncomplete=recordsTruncated||groupsTruncated||skippedInvalid>0||calendarSkipped>0||unmeasurable>0||feedFailures.length>0||referenceMismatch>0||journalUnavailable||journalTruncated;
+ const quality=signalQuality(rows.map(measurement=>({
+  measurement,
+  meta:lookup.get(metadataKey({session_date:measurement.sessionDate,ticker:measurement.ticker,direction:measurement.direction,bar_timestamp:measurement.confirmationBarAt})||'')||null
+ })),coverageIncomplete);
  return {
   sessionDate:end,asOf:now.toISOString(),feed:'Alpaca IEX 1Min',dataStatus:coverageIncomplete?'PARTIAL':'VERIFIED_WITH_LIMITATIONS',
   coverage:{recordsRead:records.length,recordsTruncated,groupsTotal:groups.length,groupsProcessed:selectedGroups.length,
    groupsTruncated,skippedInvalid,calendarSkipped,unmeasurable,referenceMismatch,feedFailures,
    measuredSignals:rows.length, maxGroupsPerRequest:MAX_HISTORY_PAIRS},
   ...historicalAggregate(rows,end,days),
+  quality:{...quality,journalUnavailable,journalTruncated},
   note:'Historical statistics cover only recorded sent confirmations with verified Alpaca trading calendars. IEX reference prices are reconciled with their exact completed IEX minute candle. Outcomes are underlying stock directional movements at +5/+10/+15 minutes after confirmation-bar close; NOT options profits, user executions or post-Telegram-entry returns. Missing, invalid, pending and unprocessed outcomes are not losses and are excluded from averages. PARTIAL coverage must never be interpreted as a complete-period win rate.'
  };
 }

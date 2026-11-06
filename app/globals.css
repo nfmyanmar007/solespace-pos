@@ -354,3 +354,23 @@
 .smartExitDetails{font-size:11px;color:#a8bdcd;line-height:1.55;margin-top:11px}
 .smartExitCard ul{margin:10px 0;padding-left:18px;color:#f5d6a4;font-size:11px;line-height:1.6}
 @media(max-width:700px){.smartExitMonitor{margin-top:12px}.smartExitGrid{grid-template-columns:1fr;padding:12px}}
+
+
+/* V3.4 manual long-option worksheet: isolated from signal and alert styling */
+.manualRiskPanel{margin-top:20px}
+.manualRiskForm{padding:20px 24px 8px}
+.manualRiskFields{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px}
+.manualRiskField{display:flex;flex-direction:column;gap:7px;color:#aab9cb;font-size:12px;min-width:0}
+.manualRiskField input,.manualRiskField select{width:100%;max-width:100%;background:#172638;color:#e6f0f8;border:1px solid #344359;border-radius:7px;padding:10px 11px;min-height:42px;font-size:14px}
+.manualRiskField input:focus-visible,.manualRiskField select:focus-visible{outline:2px solid #54dfb3;outline-offset:2px}
+.manualRiskActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.manualRiskClear{border:1px solid #46576b;background:#213041;color:#d5e2ed;border-radius:8px;padding:11px 17px}
+.manualRiskResults{margin:15px 24px;background:#152637;border:1px solid #355064;border-radius:10px;padding:16px}
+.manualRiskMetrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px}
+.manualRiskMetrics div{display:flex;flex-direction:column;gap:7px}
+.manualRiskMetrics span{font-size:11px;color:#a4b9ce}
+.manualRiskMetrics strong{font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.manualRiskStatus{border-top:1px solid #344559;padding-top:13px;margin:17px 0 0;color:#d0e6d6;line-height:1.5}
+.manualRiskError{margin:12px 24px;color:#ffb3b8}
+.manualRiskDisclaimer{margin:8px 24px 22px;font-size:11px;color:#9cacc0;line-height:1.7}
+@media(max-width:700px){.manualRiskForm{padding:16px}.manualRiskFields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.manualRiskResults{margin:12px 16px}.manualRiskMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.manualRiskMetrics strong{font-size:14px}.manualRiskDisclaimer{margin:10px 16px 18px}}

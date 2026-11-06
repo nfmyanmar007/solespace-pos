@@ -6,6 +6,7 @@ import MobileWatchlist from './components/MobileWatchlist';
 import AlertHistory from './components/AlertHistory';
 import SignalPerformance from './components/SignalPerformance';
 import SmartExitMonitor from './components/SmartExitMonitor';
+import ManualRiskPlanner from './components/ManualRiskPlanner';
 import HistoricalPerformance from './components/HistoricalPerformance';
 import ScannerMonitor from './components/ScannerMonitor';
 import WatchlistManager from './components/WatchlistManager';
@@ -72,6 +73,7 @@ export default function Home(){
   <AlertHistory onSelectTicker={openChart}/>
   <SignalPerformance/>
   <SmartExitMonitor/>
+  <ManualRiskPlanner/>
   <HistoricalPerformance/>
   <div className="notice" style={{marginTop:20,background:'#102925',borderColor:'#285345',color:'#b4e8d5',alignItems:'flex-start'}}>
     <strong style={{color:'#55e3b5'}}>AUTOMATED ALERTS</strong>

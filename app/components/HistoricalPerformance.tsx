@@ -1,10 +1,11 @@
 'use client';
 import {useEffect,useState} from 'react';
+import SignalQuality,{type QualityData} from './SignalQuality';
 
 type HorizonSummary={minutes:5|10|15;measured:number;favorable:number;unfavorable:number;flat:number;missing:number;pending:number;outsideSession:number;averageDirectionalPct:number|null};
 type Group={key:string;signals:number;scorecard:HorizonSummary[]};
 type Coverage={recordsRead:number;recordsTruncated:boolean;groupsTotal:number;groupsProcessed:number;groupsTruncated:boolean;skippedInvalid:number;calendarSkipped:number;unmeasurable:number;referenceMismatch:number;feedFailures:string[];measuredSignals:number;maxGroupsPerRequest:number};
-type HistoricalResponse={days:7|30|90;from:string;to:string;signals:number;scorecard:HorizonSummary[];daily:Group[];tickers:Group[];segments:Group[];dataStatus:string;coverage:Coverage;note:string};
+type HistoricalResponse={days:7|30|90;from:string;to:string;signals:number;scorecard:HorizonSummary[];daily:Group[];tickers:Group[];segments:Group[];dataStatus:string;coverage:Coverage;quality?:QualityData;note:string};
 const pct=(n:number|null)=>n===null?'—':(n>0?'+':'')+n.toFixed(2)+'%';
 function head(h:HorizonSummary|undefined){return h?.measured?pct(h.averageDirectionalPct):'—';}
 function groupScore(g:Group,minutes:5|10|15){return head(g.scorecard.find(s=>s.minutes===minutes));}
@@ -61,6 +62,7 @@ export default function HistoricalPerformance(){
      {!result.daily.length&&<tr><td colSpan={5}>No historical confirmations in this period.</td></tr>}
     </tbody></table></div></div>
    </div>
+   {result.quality&&<SignalQuality data={result.quality}/>}
    <p className="monitorFootnote">{result.note}</p>
   </>}
  </section>;
